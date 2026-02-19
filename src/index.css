@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 :root {
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 html,
@@ -13,10 +13,11 @@ body {
 
 body {
   margin: 0;
-  background: theme(colors.ink);
-  color: theme(colors.paper);
+  background: #f6f7fb;
+  color: #0f172a;
+  font-family: "Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
 }
 
 ::selection {
-  background: rgba(45, 107, 255, 0.35);
+  background: rgba(59, 130, 246, 0.25);
 }
