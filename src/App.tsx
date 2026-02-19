@@ -256,6 +256,7 @@ export default function App() {
             <div className="text-sm text-fog/80">
               <div className="font-display tracking-[0.18em] text-paper">PROJECT DASHBOARD</div>
               <div className="mt-1">List + Kanban · mock repo interface</div>
+              <div className="mt-2 text-xs text-fog/60">Stanley Labs</div>
             </div>
             <div className="font-mono text-xs text-fog/70">v0 demo</div>
           </div>
