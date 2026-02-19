@@ -1,9 +1,19 @@
+export type Id = string;
+
+export type Project = {
+  id: Id;
+  name: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type TaskStatus = "backlog" | "in_progress" | "blocked" | "done";
 
 export type TaskPriority = "low" | "medium" | "high";
 
 export type Task = {
-  id: string;
+  id: Id;
+  projectId: Id;
   title: string;
   description?: string;
   status: TaskStatus;
