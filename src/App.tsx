@@ -618,7 +618,7 @@ function KanbanColumn({
 
   return (
     <div className={cn(
-      "flex min-w-[280px] flex-col rounded-xl border transition-colors duration-150",
+      "flex min-w-0 flex-1 flex-col rounded-xl border transition-colors duration-150",
       isOver ? "bg-brand-50/50 border-brand-200" : "bg-gray-50 border-gray-200/80"
     )}>
       <div className="flex items-center justify-between px-3 py-3">
@@ -810,7 +810,7 @@ function KanbanBoard({
       onDragEnd={handleDragEnd}
       onDragCancel={handleDragCancel}
     >
-      <div className="flex gap-4 overflow-x-auto pb-4">
+      <div className="grid grid-cols-4 gap-4 pb-4">
         {STATUS_COLUMNS.map((col) => (
           <KanbanColumn
             key={col.key}
