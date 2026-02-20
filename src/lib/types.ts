@@ -5,6 +5,7 @@ export type Project = {
   name: string;
   description?: string;
   color: string; // hex color for the project accent
+  order: number;
   createdAt: string;
   updatedAt: string;
 };

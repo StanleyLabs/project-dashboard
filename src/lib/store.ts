@@ -16,6 +16,7 @@ export type DashboardRepo = {
   updateTask(id: string, patch: TaskUpdate): Promise<Task>;
   deleteTask(id: string): Promise<void>;
   reorderTask(id: string, newStatus: TaskStatus, newOrder: number): Promise<Task>;
+  reorderProjects(ids: string[]): Promise<void>;
 };
 
 let counter = 0;
@@ -29,16 +30,18 @@ export function createMockRepo(): DashboardRepo {
 
   return {
     async listProjects() {
-      return [...projects].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+      return [...projects].sort((a, b) => a.order - b.order);
     },
     async createProject(data) {
+      const maxOrder = projects.length > 0 ? Math.max(...projects.map((p) => p.order)) : -1;
       const p: Project = {
         ...data,
         id: uid("p"),
+        order: maxOrder + 1,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
-      projects = [p, ...projects];
+      projects = [...projects, p];
       return p;
     },
     async updateProject(id, patch) {
@@ -105,6 +108,13 @@ export function createMockRepo(): DashboardRepo {
 
       return tasks[idx];
     },
+    async reorderProjects(ids) {
+      const map = new Map(projects.map((p) => [p.id, p]));
+      projects = ids.map((id, i) => {
+        const p = map.get(id)!;
+        return { ...p, order: i };
+      });
+    },
   };
 }
 
@@ -129,9 +139,9 @@ export function useProjects(repo: DashboardRepo) {
     }
   }
 
-  async function create(data: Omit<Project, "id" | "createdAt" | "updatedAt">) {
-    const p = await repo.createProject(data);
-    setProjects((prev) => (prev ? [p, ...prev] : [p]));
+  async function create(data: Omit<Project, "id" | "createdAt" | "updatedAt" | "order">) {
+    const p = await repo.createProject(data as any);
+    setProjects((prev) => (prev ? [...prev, p] : [p]));
     return p;
   }
 
@@ -146,7 +156,12 @@ export function useProjects(repo: DashboardRepo) {
     setProjects((prev) => (prev ? prev.filter((x) => x.id !== id) : prev));
   }
 
-  return { projects, loading, error, refresh, create, update, remove };
+  async function reorder(ids: string[]) {
+    await repo.reorderProjects(ids);
+    setProjects(await repo.listProjects());
+  }
+
+  return { projects, loading, error, refresh, create, update, remove, reorder };
 }
 
 export function useTasks(repo: DashboardRepo, projectId: string | null) {

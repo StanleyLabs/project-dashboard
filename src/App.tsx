@@ -500,6 +500,73 @@ function ProjectForm({
 
 /* ─── Sidebar ─── */
 
+function SortableProjectItem({
+  project,
+  isActive,
+  onSelect,
+  onEdit,
+  onDelete,
+}: {
+  project: Project;
+  isActive: boolean;
+  onSelect: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: project.id });
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition: transition ?? "transform 200ms ease",
+    opacity: isDragging ? 0.4 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={cn(
+        "group flex items-center gap-1.5 rounded-lg px-1 py-2 text-sm transition-colors cursor-pointer",
+        isActive
+          ? "bg-sidebar-active text-white"
+          : "text-sidebar-muted hover:bg-sidebar-hover hover:text-white"
+      )}
+      onClick={onSelect}
+    >
+      <button
+        className="shrink-0 cursor-grab rounded p-0.5 text-sidebar-muted/50 hover:text-sidebar-muted active:cursor-grabbing"
+        {...attributes}
+        {...listeners}
+        onClick={stopProp}
+      >
+        <IconGrip className="h-3 w-3" />
+      </button>
+      <span
+        className="flex h-5 w-5 shrink-0 items-center justify-center rounded"
+        style={{ backgroundColor: project.color + "30", color: project.color }}
+      >
+        <IconFolder className="h-3.5 w-3.5" />
+      </span>
+      <span className="flex-1 truncate">{project.name}</span>
+      <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity" onClick={stopProp}>
+        <button
+          onClick={onEdit}
+          className="rounded p-1 text-sidebar-muted hover:bg-sidebar-hover hover:text-white"
+          title="Edit project"
+        >
+          <IconEdit className="h-3 w-3" />
+        </button>
+        <button
+          onClick={onDelete}
+          className="rounded p-1 text-sidebar-muted hover:bg-red-500/20 hover:text-red-400"
+          title="Delete project"
+        >
+          <IconTrash className="h-3 w-3" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function Sidebar({
   projects,
   activeId,
@@ -507,6 +574,7 @@ function Sidebar({
   onAdd,
   onEdit,
   onDelete,
+  onReorder,
   collapsed,
   onToggle,
 }: {
@@ -516,9 +584,24 @@ function Sidebar({
   onAdd: () => void;
   onEdit: (p: Project) => void;
   onDelete: (id: string) => void;
+  onReorder: (ids: string[]) => void;
   collapsed: boolean;
   onToggle: () => void;
 }) {
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
+  );
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = projects.findIndex((p) => p.id === active.id);
+    const newIndex = projects.findIndex((p) => p.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+    const reordered = arrayMove(projects, oldIndex, newIndex);
+    onReorder(reordered.map((p) => p.id));
+  }
+
   return (
     <>
       {/* Mobile overlay — only on small screens */}
@@ -554,51 +637,29 @@ function Sidebar({
               <IconPlus className="h-3.5 w-3.5" />
             </button>
           </div>
-          <div className="space-y-0.5">
-            {projects.map((p) => (
-              <div
-                key={p.id}
-                className={cn(
-                  "group flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm transition-colors cursor-pointer",
-                  p.id === activeId
-                    ? "bg-sidebar-active text-white"
-                    : "text-sidebar-muted hover:bg-sidebar-hover hover:text-white"
+          <DndContext sensors={sensors} collisionDetection={closestCorners} onDragEnd={handleDragEnd}>
+            <SortableContext items={projects.map((p) => p.id)} strategy={verticalListSortingStrategy}>
+              <div className="space-y-0.5">
+                {projects.map((p) => (
+                  <SortableProjectItem
+                    key={p.id}
+                    project={p}
+                    isActive={p.id === activeId}
+                    onSelect={() => onSelect(p.id)}
+                    onEdit={() => onEdit(p)}
+                    onDelete={() => onDelete(p.id)}
+                  />
+                ))}
+                {projects.length === 0 && (
+                  <div className="px-2 py-6 text-center text-xs text-sidebar-muted">
+                    No projects yet.
+                    <br />
+                    Create one to get started.
+                  </div>
                 )}
-                onClick={() => onSelect(p.id)}
-              >
-                <span
-                  className="flex h-5 w-5 items-center justify-center rounded"
-                  style={{ backgroundColor: p.color + "30", color: p.color }}
-                >
-                  <IconFolder className="h-3.5 w-3.5" />
-                </span>
-                <span className="flex-1 truncate">{p.name}</span>
-                <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity" onClick={stopProp}>
-                  <button
-                    onClick={() => onEdit(p)}
-                    className="rounded p-1 text-sidebar-muted hover:bg-sidebar-hover hover:text-white"
-                    title="Edit project"
-                  >
-                    <IconEdit className="h-3 w-3" />
-                  </button>
-                  <button
-                    onClick={() => onDelete(p.id)}
-                    className="rounded p-1 text-sidebar-muted hover:bg-red-500/20 hover:text-red-400"
-                    title="Delete project"
-                  >
-                    <IconTrash className="h-3 w-3" />
-                  </button>
-                </div>
               </div>
-            ))}
-            {projects.length === 0 && (
-              <div className="px-2 py-6 text-center text-xs text-sidebar-muted">
-                No projects yet.
-                <br />
-                Create one to get started.
-              </div>
-            )}
-          </div>
+            </SortableContext>
+          </DndContext>
         </div>
 
         {/* Footer */}
@@ -1399,6 +1460,7 @@ export default function App() {
         onAdd={() => setProjectModal({ mode: "create" })}
         onEdit={(p) => setProjectModal({ mode: "edit", project: p })}
         onDelete={handleDeleteProject}
+        onReorder={(ids) => projectsApi.reorder(ids)}
         collapsed={!sidebarOpen}
         onToggle={() => setSidebarOpen((v) => !v)}
       />
