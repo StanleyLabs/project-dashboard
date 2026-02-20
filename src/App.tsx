@@ -562,7 +562,7 @@ export default function App() {
           onDelete={deleteProject}
         />
 
-        <div className="flex-1">
+        <div className="flex min-h-dvh flex-1 flex-col">
           <header className="sticky top-0 z-40 border-b border-[color:var(--border)] bg-bg/90 backdrop-blur">
             <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4 sm:px-8">
               <div>
@@ -600,7 +600,7 @@ export default function App() {
             </div>
           </header>
 
-          <main className="mx-auto max-w-6xl px-5 py-8 sm:px-8">
+          <main className="mx-auto w-full max-w-6xl flex-1 px-5 py-8 sm:px-8">
             {projectsApi.loading ? (
               <div className="rounded-2xl border border-[color:var(--border)] bg-surface p-6 text-sm text-muted shadow-card">
                 Loading projects…
