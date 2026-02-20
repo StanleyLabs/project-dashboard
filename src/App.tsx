@@ -508,12 +508,10 @@ function Sidebar({
 
 function SortableTaskCard({
   task,
-  isPlaceholder,
   onEdit,
   onDelete,
 }: {
   task: Task;
-  isPlaceholder?: boolean;
   onEdit: () => void;
   onDelete: () => void;
 }) {
@@ -522,21 +520,8 @@ function SortableTaskCard({
   const style = {
     transform: CSS.Transform.toString(transform),
     transition: transition ?? "transform 200ms ease",
+    opacity: isDragging ? 0 : 1,
   };
-
-  // The original card being dragged — hide it so the gap closes
-  if (isDragging) {
-    return <div ref={setNodeRef} style={{ ...style, height: 0, overflow: "hidden", margin: 0, padding: 0 }} />;
-  }
-
-  // The preview copy in the live columns — show as dotted placeholder
-  if (isPlaceholder) {
-    return (
-      <div ref={setNodeRef} style={style}>
-        <div className="rounded-lg border-2 border-dashed border-brand-300 bg-brand-50/30" style={{ minHeight: 72 }} />
-      </div>
-    );
-  }
 
   return (
     <div ref={setNodeRef} style={style} className="animate-fade-in">
@@ -610,7 +595,6 @@ function KanbanColumn({
   label,
   icon,
   tasks,
-  activeTaskId,
   onAddTask,
   onEditTask,
   onDeleteTask,
@@ -619,7 +603,6 @@ function KanbanColumn({
   label: string;
   icon: string;
   tasks: Task[];
-  activeTaskId: string | null;
   onAddTask: () => void;
   onEditTask: (t: Task) => void;
   onDeleteTask: (t: Task) => void;
@@ -656,7 +639,6 @@ function KanbanColumn({
             <SortableTaskCard
               key={t.id}
               task={t}
-              isPlaceholder={t.id === activeTaskId}
               onEdit={() => onEditTask(t)}
               onDelete={() => onDeleteTask(t)}
             />
@@ -831,7 +813,6 @@ function KanbanBoard({
             label={col.label}
             icon={col.icon}
             tasks={liveColumns[col.key]}
-            activeTaskId={activeTask?.id ?? null}
             onAddTask={() => onAddTask(col.key)}
             onEditTask={onEditTask}
             onDeleteTask={onDeleteTask}
