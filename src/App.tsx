@@ -526,7 +526,7 @@ function SortableTaskCard({
   };
 
   return (
-    <div ref={setNodeRef} style={style} className={isActive ? "" : "animate-fade-in"}>
+    <div ref={setNodeRef} style={style} className={isActive ? "" : "animate-fade-in"} data-task-id={task.id}>
       <TaskCardInner task={task} onEdit={onEdit} onDelete={onDelete} dragProps={{ ...attributes, ...listeners }} />
     </div>
   );
@@ -713,8 +713,8 @@ function KanbanBoard({
   function handleDragStart(event: DragStartEvent) {
     const task = tasks.find((t) => t.id === event.active.id);
     setActiveTask(task ?? null);
-    const node = event.active.rect.current.initial;
-    setActiveWidth(node ? node.width : null);
+    const el = document.querySelector(`[data-task-id="${event.active.id}"]`);
+    setActiveWidth(el instanceof HTMLElement ? el.getBoundingClientRect().width : null);
   }
 
   function handleDragOver(event: DragOverEvent) {
