@@ -2,89 +2,61 @@ import { useMemo, useState } from "react";
 import type { Project, Task, TaskStatus } from "./types";
 import { MOCK_PROJECTS, MOCK_TASKS } from "./mockData";
 
-type ProjectUpdate = Partial<Omit<Project, "id" | "createdAt">>;
 export type TaskCreate = Omit<Task, "id" | "createdAt" | "updatedAt">;
 export type TaskUpdate = Partial<Omit<Task, "id" | "createdAt" | "projectId">>;
+type ProjectUpdate = Partial<Omit<Project, "id" | "createdAt">>;
 
 export type DashboardRepo = {
-  // Projects
   listProjects(): Promise<Project[]>;
-  createProject(name: string): Promise<Project>;
+  createProject(data: Omit<Project, "id" | "createdAt" | "updatedAt">): Promise<Project>;
   updateProject(id: string, patch: ProjectUpdate): Promise<Project>;
   deleteProject(id: string): Promise<void>;
-
-  // Tasks
   listTasks(projectId: string): Promise<Task[]>;
   createTask(input: TaskCreate): Promise<Task>;
   updateTask(id: string, patch: TaskUpdate): Promise<Task>;
   deleteTask(id: string): Promise<void>;
-  setTaskStatus(id: string, status: TaskStatus): Promise<Task>;
+  reorderTask(id: string, newStatus: TaskStatus, newOrder: number): Promise<Task>;
 };
 
-function sleep(ms = 120) {
-  return new Promise((r) => setTimeout(r, ms));
-}
-
+let counter = 0;
 function uid(prefix: string) {
-  return `${prefix}-${Math.random().toString(16).slice(2)}-${Date.now().toString(16)}`;
+  return `${prefix}-${++counter}-${Date.now().toString(36)}`;
 }
 
-export function createMockRepo(
-  initial: {
-    projects?: Project[];
-    tasks?: Task[];
-  } = { projects: MOCK_PROJECTS, tasks: MOCK_TASKS }
-): DashboardRepo {
-  let projects = [...(initial.projects ?? [])];
-  let tasks = [...(initial.tasks ?? [])];
+export function createMockRepo(): DashboardRepo {
+  let projects = [...MOCK_PROJECTS];
+  let tasks = [...MOCK_TASKS];
 
   return {
     async listProjects() {
-      await sleep();
-      return [...projects].sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1));
+      return [...projects].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
     },
-
-    async createProject(name) {
-      await sleep();
+    async createProject(data) {
       const p: Project = {
+        ...data,
         id: uid("p"),
-        name: name.trim() || "Untitled",
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
       projects = [p, ...projects];
       return p;
     },
-
     async updateProject(id, patch) {
-      await sleep();
       const idx = projects.findIndex((p) => p.id === id);
       if (idx === -1) throw new Error("Project not found");
-      const next: Project = {
-        ...projects[idx],
-        ...patch,
-        name: patch.name?.trim() ?? projects[idx].name,
-        updatedAt: new Date().toISOString(),
-      };
-      projects[idx] = next;
-      return next;
+      projects[idx] = { ...projects[idx], ...patch, updatedAt: new Date().toISOString() };
+      return projects[idx];
     },
-
     async deleteProject(id) {
-      await sleep();
       projects = projects.filter((p) => p.id !== id);
       tasks = tasks.filter((t) => t.projectId !== id);
     },
-
     async listTasks(projectId) {
-      await sleep();
       return tasks
         .filter((t) => t.projectId === projectId)
-        .sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1));
+        .sort((a, b) => a.order - b.order || b.updatedAt.localeCompare(a.updatedAt));
     },
-
     async createTask(input) {
-      await sleep();
       const t: Task = {
         ...input,
         id: uid("t"),
@@ -94,27 +66,44 @@ export function createMockRepo(
       tasks = [t, ...tasks];
       return t;
     },
-
     async updateTask(id, patch) {
-      await sleep();
       const idx = tasks.findIndex((t) => t.id === id);
       if (idx === -1) throw new Error("Task not found");
-      const next: Task = {
-        ...tasks[idx],
-        ...patch,
-        updatedAt: new Date().toISOString(),
-      };
-      tasks[idx] = next;
-      return next;
+      tasks[idx] = { ...tasks[idx], ...patch, updatedAt: new Date().toISOString() };
+      return tasks[idx];
     },
-
     async deleteTask(id) {
-      await sleep();
       tasks = tasks.filter((t) => t.id !== id);
     },
+    async reorderTask(id, newStatus, newOrder) {
+      const idx = tasks.findIndex((t) => t.id === id);
+      if (idx === -1) throw new Error("Task not found");
+      const task = tasks[idx];
+      const oldStatus = task.status;
 
-    async setTaskStatus(id, status) {
-      return this.updateTask(id, { status });
+      // Update orders in the target column
+      const targetTasks = tasks
+        .filter((t) => t.id !== id && t.projectId === task.projectId && t.status === newStatus)
+        .sort((a, b) => a.order - b.order);
+
+      targetTasks.splice(newOrder, 0, { ...task, status: newStatus });
+      targetTasks.forEach((t, i) => {
+        const ti = tasks.findIndex((x) => x.id === t.id);
+        if (ti !== -1) tasks[ti] = { ...tasks[ti], order: i, status: newStatus, updatedAt: new Date().toISOString() };
+      });
+
+      // If moved to a different column, reorder the old column
+      if (oldStatus !== newStatus) {
+        const oldTasks = tasks
+          .filter((t) => t.projectId === task.projectId && t.status === oldStatus)
+          .sort((a, b) => a.order - b.order);
+        oldTasks.forEach((t, i) => {
+          const ti = tasks.findIndex((x) => x.id === t.id);
+          if (ti !== -1) tasks[ti] = { ...tasks[ti], order: i };
+        });
+      }
+
+      return tasks[idx];
     },
   };
 }
@@ -132,8 +121,7 @@ export function useProjects(repo: DashboardRepo) {
     try {
       setLoading(true);
       setError(null);
-      const all = await repo.listProjects();
-      setProjects(all);
+      setProjects(await repo.listProjects());
     } catch (e) {
       setError(e instanceof Error ? e.message : "Unknown error");
     } finally {
@@ -141,14 +129,14 @@ export function useProjects(repo: DashboardRepo) {
     }
   }
 
-  async function create(name: string) {
-    const p = await repo.createProject(name);
+  async function create(data: Omit<Project, "id" | "createdAt" | "updatedAt">) {
+    const p = await repo.createProject(data);
     setProjects((prev) => (prev ? [p, ...prev] : [p]));
     return p;
   }
 
-  async function rename(id: string, name: string) {
-    const p = await repo.updateProject(id, { name });
+  async function update(id: string, patch: ProjectUpdate) {
+    const p = await repo.updateProject(id, patch);
     setProjects((prev) => (prev ? prev.map((x) => (x.id === id ? p : x)) : prev));
     return p;
   }
@@ -158,7 +146,7 @@ export function useProjects(repo: DashboardRepo) {
     setProjects((prev) => (prev ? prev.filter((x) => x.id !== id) : prev));
   }
 
-  return { projects, loading, error, refresh, create, rename, remove };
+  return { projects, loading, error, refresh, create, update, remove };
 }
 
 export function useTasks(repo: DashboardRepo, projectId: string | null) {
@@ -171,8 +159,7 @@ export function useTasks(repo: DashboardRepo, projectId: string | null) {
     try {
       setLoading(true);
       setError(null);
-      const all = await repo.listTasks(projectId);
-      setTasks(all);
+      setTasks(await repo.listTasks(projectId));
     } catch (e) {
       setError(e instanceof Error ? e.message : "Unknown error");
     } finally {
@@ -197,11 +184,12 @@ export function useTasks(repo: DashboardRepo, projectId: string | null) {
     setTasks((prev) => (prev ? prev.filter((x) => x.id !== id) : prev));
   }
 
-  async function setStatus(id: string, status: TaskStatus) {
-    const t = await repo.setTaskStatus(id, status);
-    setTasks((prev) => (prev ? prev.map((x) => (x.id === id ? t : x)) : prev));
-    return t;
+  async function reorder(id: string, newStatus: TaskStatus, newOrder: number) {
+    await repo.reorderTask(id, newStatus, newOrder);
+    if (projectId) {
+      setTasks(await repo.listTasks(projectId));
+    }
   }
 
-  return { tasks, loading, error, refresh, create, update, remove, setStatus };
+  return { tasks, loading, error, refresh, create, update, remove, reorder };
 }

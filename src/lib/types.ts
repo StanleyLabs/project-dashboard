@@ -3,13 +3,15 @@ export type Id = string;
 export type Project = {
   id: Id;
   name: string;
+  description?: string;
+  color: string; // hex color for the project accent
   createdAt: string;
   updatedAt: string;
 };
 
-export type TaskStatus = "backlog" | "in_progress" | "blocked" | "done";
+export type TaskStatus = "backlog" | "todo" | "in_progress" | "done";
 
-export type TaskPriority = "low" | "medium" | "high";
+export type TaskPriority = "low" | "medium" | "high" | "urgent";
 
 export type Task = {
   id: Id;
@@ -21,9 +23,32 @@ export type Task = {
   assignee?: {
     name: string;
     initials: string;
+    color: string;
   };
-  due?: string; // ISO date
+  due?: string;
   tags?: string[];
-  createdAt: string; // ISO date-time
-  updatedAt: string; // ISO date-time
+  order: number; // sort order within status column
+  createdAt: string;
+  updatedAt: string;
 };
+
+export type ViewMode = "kanban" | "list";
+
+export const STATUS_COLUMNS: { key: TaskStatus; label: string; icon: string }[] = [
+  { key: "backlog", label: "Backlog", icon: "○" },
+  { key: "todo", label: "To Do", icon: "◎" },
+  { key: "in_progress", label: "In Progress", icon: "◉" },
+  { key: "done", label: "Done", icon: "●" },
+];
+
+export const PRIORITY_CONFIG: Record<TaskPriority, { label: string; color: string; bg: string }> = {
+  urgent: { label: "Urgent", color: "text-red-700", bg: "bg-red-50 border-red-200" },
+  high: { label: "High", color: "text-orange-700", bg: "bg-orange-50 border-orange-200" },
+  medium: { label: "Medium", color: "text-yellow-700", bg: "bg-yellow-50 border-yellow-200" },
+  low: { label: "Low", color: "text-gray-500", bg: "bg-gray-50 border-gray-200" },
+};
+
+export const PROJECT_COLORS = [
+  "#6366F1", "#8B5CF6", "#EC4899", "#EF4444", "#F97316",
+  "#EAB308", "#22C55E", "#14B8A6", "#06B6D4", "#3B82F6",
+];
