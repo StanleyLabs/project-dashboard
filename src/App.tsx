@@ -40,11 +40,6 @@ function nameToInitials(name: string): string {
   return name.slice(0, 2).toUpperCase();
 }
 
-function nameToColor(name: string): string {
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
-  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
-}
 
 /* ─── Icons (inline SVG for zero deps) ─── */
 
@@ -238,7 +233,7 @@ function TaskForm({
   const [status, setStatus] = useState<TaskStatus>(initial.status);
   const [tags, setTags] = useState(initial.tags);
   const [assignee, setAssignee] = useState(initial.assignee);
-  const [assigneeColor, setAssigneeColor] = useState(initial.assigneeColor || nameToColor(initial.assignee || ""));
+  const [assigneeColor, setAssigneeColor] = useState(initial.assigneeColor || AVATAR_COLORS[0]);
   const [assigneeFocused, setAssigneeFocused] = useState(false);
   const assigneeRef = useRef<HTMLDivElement>(null);
 
@@ -344,9 +339,6 @@ function TaskForm({
               value={assignee}
               onChange={(e) => {
                 setAssignee(e.target.value);
-                if (e.target.value.trim() && !knownAssignees.some((a) => a.name === e.target.value)) {
-                  setAssigneeColor(nameToColor(e.target.value));
-                }
               }}
               onFocus={() => setAssigneeFocused(true)}
               className="block w-full rounded-lg border border-gray-200 bg-raised px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/25"
