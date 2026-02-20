@@ -4,38 +4,45 @@ export default {
   theme: {
     extend: {
       colors: {
-        gray: {
-          50: "#FAFAFA",
-          100: "#F4F4F5",
-          200: "#E4E4E7",
-          300: "#D4D4D8",
-          400: "#A1A1AA",
-          500: "#71717A",
-          600: "#52525B",
-          700: "#3F3F46",
-          800: "#27272A",
-          900: "#18181B",
-          950: "#09090B",
+        // Sidebar / chrome
+        sidebar: {
+          DEFAULT: "#1a1a2e",
+          hover: "#22223a",
+          active: "#2a2a45",
+          border: "#2e2e4a",
+          muted: "#8888a4",
         },
-        brand: {
-          50: "#EEF2FF",
-          100: "#E0E7FF",
-          200: "#C7D2FE",
-          300: "#A5B4FC",
-          400: "#818CF8",
-          500: "#6366F1",
-          600: "#4F46E5",
-          700: "#4338CA",
-          800: "#3730A3",
-          900: "#312E81",
+        // Accent
+        accent: {
+          DEFAULT: "#6c5ce7",
+          light: "#a29bfe",
+          dark: "#5a4bd1",
+          muted: "rgba(108, 92, 231, 0.15)",
         },
+        // Status colors
+        status: {
+          backlog: "#8888a4",
+          todo: "#4ea8de",
+          progress: "#f4a261",
+          done: "#2dd4a8",
+        },
+        // Priority
+        pri: {
+          urgent: "#ff6b6b",
+          high: "#f4a261",
+          medium: "#ffd166",
+          low: "#8888a4",
+        },
+        // Surfaces
+        canvas: "#f0f0f5",
+        surface: "#ffffff",
+        raised: "#fafafc",
       },
       boxShadow: {
-        sm: "0 1px 2px 0 rgb(0 0 0 / 0.05)",
-        card: "0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)",
-        md: "0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)",
-        lg: "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)",
-        overlay: "0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)",
+        card: "0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)",
+        lifted: "0 4px 12px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.06)",
+        overlay: "0 16px 48px rgba(0,0,0,0.12), 0 4px 12px rgba(0,0,0,0.08)",
+        glow: "0 0 20px rgba(108, 92, 231, 0.15)",
       },
       fontFamily: {
         sans: [

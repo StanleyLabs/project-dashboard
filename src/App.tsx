@@ -122,9 +122,15 @@ function IconMenu({ className = "w-5 h-5" }: { className?: string }) {
 /* ─── Small UI Components ─── */
 
 function PriorityBadge({ priority }: { priority: TaskPriority }) {
+  const styles: Record<TaskPriority, string> = {
+    urgent: "bg-pri-urgent/10 text-pri-urgent border-pri-urgent/20",
+    high: "bg-pri-high/10 text-pri-high border-pri-high/20",
+    medium: "bg-pri-medium/10 text-pri-medium border-pri-medium/20",
+    low: "bg-gray-100 text-gray-500 border-gray-200",
+  };
   const config = PRIORITY_CONFIG[priority];
   return (
-    <span className={cn("inline-flex items-center rounded-md border px-1.5 py-0.5 text-2xs font-medium", config.bg, config.color)}>
+    <span className={cn("inline-flex items-center rounded-md border px-1.5 py-0.5 text-2xs font-medium", styles[priority])}>
       {config.label}
     </span>
   );
@@ -146,7 +152,7 @@ function Avatar({ initials, color, size = "sm" }: { initials: string; color: str
 
 function Tag({ children }: { children: React.ReactNode }) {
   return (
-    <span className="inline-flex items-center rounded-md bg-gray-100 px-1.5 py-0.5 text-2xs font-medium text-gray-600">
+    <span className="inline-flex items-center rounded-md bg-accent/8 px-1.5 py-0.5 text-2xs font-medium text-accent-dark">
       {children}
     </span>
   );
@@ -181,13 +187,13 @@ function Modal({
   return (
     <div
       ref={overlayRef}
-      className="fixed inset-0 z-50 flex items-start justify-center bg-black/40 px-4 pt-[15vh] animate-fade-in"
+      className="fixed inset-0 z-50 flex items-start justify-center bg-sidebar/60 backdrop-blur-sm px-4 pt-[15vh] animate-fade-in"
       onClick={(e) => { if (e.target === overlayRef.current) onClose(); }}
     >
-      <div className={cn("w-full rounded-xl bg-white shadow-overlay animate-scale-in", width)}>
-        <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
+      <div className={cn("w-full rounded-2xl bg-white shadow-overlay animate-scale-in border border-gray-200", width)}>
+        <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4">
           <h2 className="text-sm font-semibold text-gray-900">{title}</h2>
-          <button onClick={onClose} className="rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600">
+          <button onClick={onClose} className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors">
             <IconX />
           </button>
         </div>
@@ -233,7 +239,7 @@ function TaskForm({
         <input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+          className="block w-full rounded-lg border border-gray-200 bg-raised px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/25"
           placeholder="What needs to be done?"
           required
           autoFocus
@@ -245,7 +251,7 @@ function TaskForm({
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           rows={3}
-          className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+          className="block w-full rounded-lg border border-gray-200 bg-raised px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/25"
           placeholder="Add more detail…"
         />
       </label>
@@ -255,7 +261,7 @@ function TaskForm({
           <select
             value={status}
             onChange={(e) => setStatus(e.target.value as TaskStatus)}
-            className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+            className="block w-full rounded-lg border border-gray-200 bg-raised px-3 py-2 text-sm text-gray-900 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/25"
           >
             {STATUS_COLUMNS.map((c) => (
               <option key={c.key} value={c.key}>{c.label}</option>
@@ -267,7 +273,7 @@ function TaskForm({
           <select
             value={priority}
             onChange={(e) => setPriority(e.target.value as TaskPriority)}
-            className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+            className="block w-full rounded-lg border border-gray-200 bg-raised px-3 py-2 text-sm text-gray-900 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/25"
           >
             <option value="urgent">Urgent</option>
             <option value="high">High</option>
@@ -281,7 +287,7 @@ function TaskForm({
         <input
           value={tags}
           onChange={(e) => setTags(e.target.value)}
-          className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+          className="block w-full rounded-lg border border-gray-200 bg-raised px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/25"
           placeholder="frontend, design, bug"
         />
       </label>
@@ -289,13 +295,13 @@ function TaskForm({
         <button
           type="button"
           onClick={onCancel}
-          className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+          className="rounded-lg border border-gray-200 bg-raised px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
         >
           Cancel
         </button>
         <button
           type="submit"
-          className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+          className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent-dark focus:outline-none focus:ring-2 focus:ring-accent/30"
         >
           Save Task
         </button>
@@ -334,7 +340,7 @@ function ProjectForm({
         <input
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+          className="block w-full rounded-lg border border-gray-200 bg-raised px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/25"
           placeholder="My new project"
           required
           autoFocus
@@ -345,7 +351,7 @@ function ProjectForm({
         <input
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+          className="block w-full rounded-lg border border-gray-200 bg-raised px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/25"
           placeholder="What's this project about?"
         />
       </label>
@@ -359,7 +365,7 @@ function ProjectForm({
               onClick={() => setColor(c)}
               className={cn(
                 "h-7 w-7 rounded-full border-2 transition-all",
-                color === c ? "border-gray-900 scale-110" : "border-transparent hover:scale-105"
+                color === c ? "border-sidebar scale-110 shadow-card" : "border-transparent hover:scale-105"
               )}
               style={{ backgroundColor: c }}
             />
@@ -370,13 +376,13 @@ function ProjectForm({
         <button
           type="button"
           onClick={onCancel}
-          className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+          className="rounded-lg border border-gray-200 bg-raised px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
         >
           Cancel
         </button>
         <button
           type="submit"
-          className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700"
+          className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent-dark"
         >
           {submitLabel}
         </button>
@@ -414,28 +420,28 @@ function Sidebar({
       )}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex w-64 shrink-0 flex-col border-r border-gray-200 bg-white transition-all duration-200 lg:relative lg:z-auto",
+          "fixed inset-y-0 left-0 z-50 flex w-64 shrink-0 flex-col bg-sidebar transition-all duration-200 lg:relative lg:z-auto",
           collapsed ? "-translate-x-full lg:ml-[-256px]" : "translate-x-0 lg:ml-0"
         )}
       >
         {/* Logo */}
-        <div className="flex h-14 items-center gap-3 border-b border-gray-200 px-4">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600 text-sm font-bold text-white">
-            T
+        <div className="flex h-14 items-center gap-3 border-b border-sidebar-border px-4">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-accent to-accent-light text-sm font-bold text-white shadow-glow">
+            P
           </div>
-          <span className="text-sm font-semibold text-gray-900">Taskflow</span>
-          <button onClick={onToggle} className="ml-auto rounded-md p-1 text-gray-400 hover:text-gray-600">
+          <span className="text-sm font-semibold text-white">Project Dashboard</span>
+          <button onClick={onToggle} className="ml-auto rounded-md p-1 text-sidebar-muted hover:text-white">
             <IconX />
           </button>
         </div>
 
         {/* Projects list */}
-        <div className="flex-1 overflow-y-auto px-3 py-4">
+        <div className="dark-scroll flex-1 overflow-y-auto px-3 py-4">
           <div className="mb-2 flex items-center justify-between px-2">
-            <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">Projects</span>
+            <span className="text-2xs font-semibold uppercase tracking-wider text-sidebar-muted">Projects</span>
             <button
               onClick={onAdd}
-              className="rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+              className="rounded-md p-1 text-sidebar-muted hover:bg-sidebar-hover hover:text-white"
               title="New project"
             >
               <IconPlus className="h-3.5 w-3.5" />
@@ -446,28 +452,31 @@ function Sidebar({
               <div
                 key={p.id}
                 className={cn(
-                  "group flex items-center gap-2.5 rounded-lg px-2 py-2 text-sm transition-colors cursor-pointer",
+                  "group flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm transition-colors cursor-pointer",
                   p.id === activeId
-                    ? "bg-brand-50 text-brand-700 font-medium"
-                    : "text-gray-700 hover:bg-gray-100"
+                    ? "bg-sidebar-active text-white"
+                    : "text-sidebar-muted hover:bg-sidebar-hover hover:text-white"
                 )}
                 onClick={() => onSelect(p.id)}
               >
-                <span className="flex h-5 w-5 items-center justify-center rounded" style={{ backgroundColor: p.color + "20", color: p.color }}>
+                <span
+                  className="flex h-5 w-5 items-center justify-center rounded"
+                  style={{ backgroundColor: p.color + "30", color: p.color }}
+                >
                   <IconFolder className="h-3.5 w-3.5" />
                 </span>
                 <span className="flex-1 truncate">{p.name}</span>
                 <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity" onClick={stopProp}>
                   <button
                     onClick={() => onEdit(p)}
-                    className="rounded p-1 text-gray-400 hover:bg-gray-200 hover:text-gray-600"
+                    className="rounded p-1 text-sidebar-muted hover:bg-sidebar-hover hover:text-white"
                     title="Edit project"
                   >
                     <IconEdit className="h-3 w-3" />
                   </button>
                   <button
                     onClick={() => onDelete(p.id)}
-                    className="rounded p-1 text-gray-400 hover:bg-red-100 hover:text-red-600"
+                    className="rounded p-1 text-sidebar-muted hover:bg-red-500/20 hover:text-red-400"
                     title="Delete project"
                   >
                     <IconTrash className="h-3 w-3" />
@@ -476,7 +485,7 @@ function Sidebar({
               </div>
             ))}
             {projects.length === 0 && (
-              <div className="px-2 py-6 text-center text-xs text-gray-400">
+              <div className="px-2 py-6 text-center text-xs text-sidebar-muted">
                 No projects yet.
                 <br />
                 Create one to get started.
@@ -486,8 +495,8 @@ function Sidebar({
         </div>
 
         {/* Footer */}
-        <div className="border-t border-gray-200 px-4 py-3">
-          <div className="text-2xs text-gray-400">Built by Stanley Labs</div>
+        <div className="border-t border-sidebar-border px-4 py-3">
+          <div className="text-2xs text-sidebar-muted">Built by Stanley Labs</div>
         </div>
       </aside>
     </>
@@ -538,8 +547,8 @@ function TaskCardInner({
   return (
     <div
       className={cn(
-        "group rounded-lg border border-gray-200 bg-white p-3 transition-shadow hover:shadow-md",
-        overlay && "shadow-lg ring-2 ring-brand-500/20"
+        "group rounded-xl border border-gray-200 bg-white p-3.5 transition-all hover:shadow-lifted hover:border-gray-300",
+        overlay && "shadow-lifted ring-2 ring-accent/25 border-accent/30"
       )}
     >
       <div className="flex items-start gap-2">
@@ -608,20 +617,20 @@ function KanbanColumn({
 
   return (
     <div className={cn(
-      "flex min-w-0 flex-1 flex-col rounded-xl border transition-colors duration-150",
-      isOver ? "bg-brand-50/50 border-brand-200" : "bg-gray-50 border-gray-200/80"
+      "flex min-w-0 flex-1 flex-col rounded-2xl border transition-colors duration-150",
+      isOver ? "bg-accent/5 border-accent/30" : "bg-raised border-gray-200"
     )}>
-      <div className="flex items-center justify-between px-3 py-3">
+      <div className="flex items-center justify-between px-3.5 py-3">
         <div className="flex items-center gap-2">
-          <span className="text-sm opacity-60">{icon}</span>
-          <span className="text-xs font-semibold text-gray-700">{label}</span>
-          <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-gray-200 px-1.5 text-2xs font-medium text-gray-600">
+          <span className="text-xs">{icon}</span>
+          <span className="text-xs font-semibold text-gray-800">{label}</span>
+          <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-gray-200/80 px-1.5 text-2xs font-semibold text-gray-500">
             {tasks.length}
           </span>
         </div>
         <button
           onClick={onAddTask}
-          className="rounded-md p-1 text-gray-400 hover:bg-gray-200 hover:text-gray-600"
+          className="rounded-lg p-1 text-gray-400 hover:bg-gray-200/80 hover:text-gray-600 transition-colors"
           title={`Add task to ${label}`}
         >
           <IconPlus className="h-3.5 w-3.5" />
@@ -640,7 +649,7 @@ function KanbanColumn({
           ))}
         </SortableContext>
         {tasks.length === 0 && (
-          <div className="flex h-16 items-center justify-center rounded-lg border border-dashed border-gray-300 text-xs text-gray-400">
+          <div className="flex h-16 items-center justify-center rounded-xl border border-dashed border-gray-300/80 text-xs text-gray-400">
             Drop tasks here
           </div>
         )}
@@ -908,7 +917,7 @@ function SortableListRow({
 
 function ListOverlayRow({ task }: { task: Task }) {
   return (
-    <div className="grid grid-cols-[20px_1fr_100px_140px_80px] items-center gap-3 rounded-lg border border-gray-200 bg-white px-4 py-3 shadow-lg ring-2 ring-brand-500/20">
+    <div className="grid grid-cols-[20px_1fr_100px_140px_80px] items-center gap-3 rounded-xl border border-accent/30 bg-white px-4 py-3 shadow-lifted ring-2 ring-accent/20">
       <IconGrip className="h-3.5 w-3.5 text-gray-400" />
       <div className="min-w-0">
         <p className="truncate text-sm font-medium text-gray-900">{task.title}</p>
@@ -954,13 +963,13 @@ function ListStatusGroup({
 
   return (
     <div className={cn(
-      "overflow-hidden rounded-xl border bg-white transition-colors duration-150",
-      isOver ? "border-brand-300 bg-brand-50/30" : "border-gray-200"
+      "overflow-hidden rounded-2xl border bg-white transition-colors duration-150",
+      isOver ? "border-accent/30 bg-accent/5" : "border-gray-200"
     )}>
-      <div className="flex items-center gap-2 border-b border-gray-200 bg-gray-50 px-4 py-2.5">
-        <span className="text-sm opacity-60">{icon}</span>
-        <span className="text-xs font-semibold text-gray-700">{label}</span>
-        <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-gray-200 px-1.5 text-2xs font-medium text-gray-600">
+      <div className="flex items-center gap-2 border-b border-gray-100 bg-raised px-4 py-2.5">
+        <span className="text-xs">{icon}</span>
+        <span className="text-xs font-semibold text-gray-800">{label}</span>
+        <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-gray-200/80 px-1.5 text-2xs font-semibold text-gray-500">
           {tasks.length}
         </span>
       </div>
@@ -1263,7 +1272,7 @@ export default function App() {
       {/* Main content */}
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Top bar */}
-        <header className="flex h-14 shrink-0 items-center gap-3 border-b border-gray-200 bg-white px-4">
+        <header className="flex h-14 shrink-0 items-center gap-3 border-b border-gray-200 bg-white/80 backdrop-blur-md px-4">
           <button
             onClick={() => setSidebarOpen((v) => !v)}
             className="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
@@ -1291,17 +1300,17 @@ export default function App() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search tasks…"
-                className="h-8 w-48 rounded-lg border border-gray-200 bg-gray-50 pl-8 pr-3 text-xs text-gray-900 placeholder:text-gray-400 focus:border-brand-300 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+                className="h-8 w-48 rounded-lg border border-gray-200 bg-canvas pl-8 pr-3 text-xs text-gray-900 placeholder:text-gray-400 focus:border-accent focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/20"
               />
             </div>
 
             {/* View toggle */}
-            <div className="flex rounded-lg border border-gray-200 bg-gray-50 p-0.5">
+            <div className="flex rounded-lg border border-gray-200 bg-canvas p-0.5">
               <button
                 onClick={() => setView("kanban")}
                 className={cn(
-                  "flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors",
-                  view === "kanban" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"
+                  "flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-all",
+                  view === "kanban" ? "bg-white text-gray-900 shadow-card" : "text-gray-500 hover:text-gray-700"
                 )}
               >
                 <IconKanban className="h-3.5 w-3.5" />
@@ -1310,8 +1319,8 @@ export default function App() {
               <button
                 onClick={() => setView("list")}
                 className={cn(
-                  "flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors",
-                  view === "list" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"
+                  "flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-all",
+                  view === "list" ? "bg-white text-gray-900 shadow-card" : "text-gray-500 hover:text-gray-700"
                 )}
               >
                 <IconList className="h-3.5 w-3.5" />
@@ -1322,7 +1331,7 @@ export default function App() {
             {/* New task */}
             <button
               onClick={() => setTaskModal({ mode: "create", defaultStatus: "todo" })}
-              className="flex items-center gap-1.5 rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-700 transition-colors"
+              className="flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-xs font-medium text-white hover:bg-accent-dark transition-colors"
             >
               <IconPlus className="h-3.5 w-3.5" />
               New Task
@@ -1332,12 +1341,12 @@ export default function App() {
 
         {/* Progress bar */}
         {activeProject && totalTasks > 0 && (
-          <div className="border-b border-gray-200 bg-white px-4 py-2.5">
+          <div className="border-b border-gray-200 bg-white/80 backdrop-blur-md px-4 py-2.5">
             <div className="flex items-center gap-3">
               <div className="flex-1">
                 <div className="h-1.5 overflow-hidden rounded-full bg-gray-100">
                   <div
-                    className="h-full rounded-full bg-brand-500 transition-all duration-500"
+                    className="h-full rounded-full bg-gradient-to-r from-accent to-accent-light transition-all duration-500"
                     style={{ width: `${(doneTasks / totalTasks) * 100}%` }}
                   />
                 </div>
@@ -1350,7 +1359,7 @@ export default function App() {
         )}
 
         {/* Content */}
-        <main className="flex-1 overflow-auto p-4 sm:p-6">
+        <main className="flex-1 overflow-auto bg-canvas p-4 sm:p-6">
           {!activeProjectId ? (
             <div className="flex flex-col items-center justify-center py-20 text-gray-400">
               <IconFolder className="mb-4 h-12 w-12" />
@@ -1358,7 +1367,7 @@ export default function App() {
               <p className="mt-1 text-sm">Your tasks will appear here</p>
               <button
                 onClick={() => setProjectModal({ mode: "create" })}
-                className="mt-4 flex items-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700"
+                className="mt-4 flex items-center gap-1.5 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent-dark"
               >
                 <IconPlus className="h-4 w-4" />
                 Create Project
@@ -1366,7 +1375,7 @@ export default function App() {
             </div>
           ) : tasksApi.loading ? (
             <div className="flex items-center justify-center py-20">
-              <div className="h-6 w-6 animate-spin rounded-full border-2 border-gray-300 border-t-brand-600" />
+              <div className="h-6 w-6 animate-spin rounded-full border-2 border-gray-300 border-t-accent" />
             </div>
           ) : view === "kanban" ? (
             <KanbanBoard
