@@ -519,15 +519,14 @@ function SortableTaskCard({
 }) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: task.id });
 
-  const hidden = isActive;
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition: transition ?? "transform 200ms ease",
-    opacity: hidden ? 0 : 1,
+    ...(isActive ? { visibility: "hidden" as const } : {}),
   };
 
   return (
-    <div ref={setNodeRef} style={style} className="animate-fade-in">
+    <div ref={setNodeRef} style={style} className={isActive ? "" : "animate-fade-in"}>
       <TaskCardInner task={task} onEdit={onEdit} onDelete={onDelete} dragProps={{ ...attributes, ...listeners }} />
     </div>
   );
