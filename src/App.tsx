@@ -517,15 +517,13 @@ function SortableTaskCard({
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: task.id });
 
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition: transition ?? "transform 200ms ease",
-    opacity: isDragging ? 0 : 1,
-  };
+  const style: React.CSSProperties = isDragging
+    ? { height: 0, minHeight: 0, overflow: "hidden", opacity: 0, margin: 0, padding: 0 }
+    : { transform: CSS.Transform.toString(transform), transition: transition ?? "transform 200ms ease" };
 
   return (
-    <div ref={setNodeRef} style={style} className="animate-fade-in">
-      <TaskCardInner task={task} onEdit={onEdit} onDelete={onDelete} dragProps={{ ...attributes, ...listeners }} />
+    <div ref={setNodeRef} style={style} className={isDragging ? "" : "animate-fade-in"}>
+      {!isDragging && <TaskCardInner task={task} onEdit={onEdit} onDelete={onDelete} dragProps={{ ...attributes, ...listeners }} />}
     </div>
   );
 }
