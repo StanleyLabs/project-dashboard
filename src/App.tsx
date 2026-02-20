@@ -1344,6 +1344,15 @@ export default function App() {
     }
   }, [projectsApi, activeProjectId]);
 
+  // Sync a person's color across all tasks with the same assignee name
+  const syncAssigneeColor = useCallback(async (name: string, color: string) => {
+    for (const t of tasksApi.tasks ?? []) {
+      if (t.assignee && t.assignee.name === name && t.assignee.color !== color) {
+        await tasksApi.update(t.id, { assignee: { ...t.assignee, color } });
+      }
+    }
+  }, [tasksApi]);
+
   const handleCreateTask = useCallback(async (data: { title: string; description: string; priority: TaskPriority; status: TaskStatus; tags: string[]; assignee: string; assigneeColor: string }) => {
     if (!activeProjectId) return;
     const maxOrder = Math.max(0, ...(tasksApi.tasks ?? []).filter((t) => t.status === data.status).map((t) => t.order));
@@ -1359,8 +1368,9 @@ export default function App() {
         ? { name: data.assignee, initials: nameToInitials(data.assignee), color: data.assigneeColor }
         : undefined,
     });
+    if (data.assignee) await syncAssigneeColor(data.assignee, data.assigneeColor);
     setTaskModal(null);
-  }, [activeProjectId, tasksApi]);
+  }, [activeProjectId, tasksApi, syncAssigneeColor]);
 
   const handleUpdateTask = useCallback(async (data: { title: string; description: string; priority: TaskPriority; status: TaskStatus; tags: string[]; assignee: string; assigneeColor: string }) => {
     if (!taskModal?.task) return;
@@ -1374,8 +1384,9 @@ export default function App() {
         ? { name: data.assignee, initials: nameToInitials(data.assignee), color: data.assigneeColor }
         : undefined,
     });
+    if (data.assignee) await syncAssigneeColor(data.assignee, data.assigneeColor);
     setTaskModal(null);
-  }, [tasksApi, taskModal]);
+  }, [tasksApi, taskModal, syncAssigneeColor]);
 
   const handleDeleteTask = useCallback(async (t: Task) => {
     if (!confirm("Delete this task?")) return;
