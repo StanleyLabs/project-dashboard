@@ -32,6 +32,20 @@ function stopProp(e: React.MouseEvent) {
   e.stopPropagation();
 }
 
+const AVATAR_COLORS = ["#6c5ce7", "#e84393", "#00b894", "#fdcb6e", "#e17055", "#0984e3", "#6c5ce7", "#00cec9", "#d63031", "#a29bfe"];
+
+function nameToInitials(name: string): string {
+  const parts = name.trim().split(/\s+/);
+  if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  return name.slice(0, 2).toUpperCase();
+}
+
+function nameToColor(name: string): string {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+}
+
 /* ─── Icons (inline SVG for zero deps) ─── */
 
 function IconPlus({ className = "w-4 h-4" }: { className?: string }) {
@@ -210,8 +224,8 @@ function TaskForm({
   onSubmit,
   onCancel,
 }: {
-  initial: { title: string; description: string; priority: TaskPriority; status: TaskStatus; tags: string };
-  onSubmit: (v: { title: string; description: string; priority: TaskPriority; status: TaskStatus; tags: string[] }) => void;
+  initial: { title: string; description: string; priority: TaskPriority; status: TaskStatus; tags: string; assignee: string };
+  onSubmit: (v: { title: string; description: string; priority: TaskPriority; status: TaskStatus; tags: string[]; assignee: string }) => void;
   onCancel: () => void;
 }) {
   const [title, setTitle] = useState(initial.title);
@@ -219,6 +233,7 @@ function TaskForm({
   const [priority, setPriority] = useState<TaskPriority>(initial.priority);
   const [status, setStatus] = useState<TaskStatus>(initial.status);
   const [tags, setTags] = useState(initial.tags);
+  const [assignee, setAssignee] = useState(initial.assignee);
 
   return (
     <form
@@ -231,6 +246,7 @@ function TaskForm({
           priority,
           status,
           tags: tags.split(",").map((x) => x.trim()).filter(Boolean),
+          assignee: assignee.trim(),
         });
       }}
     >
@@ -282,6 +298,20 @@ function TaskForm({
           </select>
         </label>
       </div>
+      <label className="block">
+        <span className="mb-1.5 block text-xs font-medium text-gray-700">Assignee</span>
+        <div className="flex items-center gap-2">
+          {assignee.trim() && (
+            <Avatar initials={nameToInitials(assignee)} color={nameToColor(assignee)} />
+          )}
+          <input
+            value={assignee}
+            onChange={(e) => setAssignee(e.target.value)}
+            className="block w-full rounded-lg border border-gray-200 bg-raised px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/25"
+            placeholder="e.g. Ken Stanley"
+          />
+        </div>
+      </label>
       <label className="block">
         <span className="mb-1.5 block text-xs font-medium text-gray-700">Tags <span className="font-normal text-gray-400">(comma-separated)</span></span>
         <input
@@ -1218,7 +1248,7 @@ export default function App() {
     }
   }, [projectsApi, activeProjectId]);
 
-  const handleCreateTask = useCallback(async (data: { title: string; description: string; priority: TaskPriority; status: TaskStatus; tags: string[] }) => {
+  const handleCreateTask = useCallback(async (data: { title: string; description: string; priority: TaskPriority; status: TaskStatus; tags: string[]; assignee: string }) => {
     if (!activeProjectId) return;
     const maxOrder = Math.max(0, ...(tasksApi.tasks ?? []).filter((t) => t.status === data.status).map((t) => t.order));
     await tasksApi.create({
@@ -1229,12 +1259,14 @@ export default function App() {
       status: data.status,
       tags: data.tags,
       order: maxOrder + 1,
-      assignee: { name: "Ken Stanley", initials: "KS", color: "#6366F1" },
+      assignee: data.assignee
+        ? { name: data.assignee, initials: nameToInitials(data.assignee), color: nameToColor(data.assignee) }
+        : undefined,
     });
     setTaskModal(null);
   }, [activeProjectId, tasksApi]);
 
-  const handleUpdateTask = useCallback(async (data: { title: string; description: string; priority: TaskPriority; status: TaskStatus; tags: string[] }) => {
+  const handleUpdateTask = useCallback(async (data: { title: string; description: string; priority: TaskPriority; status: TaskStatus; tags: string[]; assignee: string }) => {
     if (!taskModal?.task) return;
     await tasksApi.update(taskModal.task.id, {
       title: data.title,
@@ -1242,6 +1274,9 @@ export default function App() {
       priority: data.priority,
       status: data.status,
       tags: data.tags,
+      assignee: data.assignee
+        ? { name: data.assignee, initials: nameToInitials(data.assignee), color: nameToColor(data.assignee) }
+        : undefined,
     });
     setTaskModal(null);
   }, [tasksApi, taskModal]);
@@ -1431,6 +1466,7 @@ export default function App() {
                 priority: taskModal.task?.priority ?? "medium",
                 status: taskModal.task?.status ?? taskModal.defaultStatus ?? "todo",
                 tags: (taskModal.task?.tags ?? []).join(", "),
+                assignee: taskModal.task?.assignee?.name ?? "",
               }}
               onSubmit={taskModal.mode === "create" ? handleCreateTask : handleUpdateTask}
               onCancel={() => setTaskModal(null)}
