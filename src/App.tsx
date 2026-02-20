@@ -130,16 +130,6 @@ function PriorityBadge({ priority }: { priority: TaskPriority }) {
   );
 }
 
-function StatusDot({ status }: { status: TaskStatus }) {
-  const colors: Record<TaskStatus, string> = {
-    backlog: "bg-gray-300",
-    todo: "bg-blue-400",
-    in_progress: "bg-amber-400",
-    done: "bg-emerald-500",
-  };
-  return <span className={cn("inline-block h-2 w-2 rounded-full", colors[status])} />;
-}
-
 function Avatar({ initials, color, size = "sm" }: { initials: string; color: string; size?: "sm" | "md" }) {
   return (
     <span
@@ -418,13 +408,13 @@ function Sidebar({
 }) {
   return (
     <>
-      {/* Mobile overlay */}
+      {/* Mobile overlay — only on small screens */}
       {!collapsed && (
         <div className="fixed inset-0 z-40 bg-black/30 lg:hidden" onClick={onToggle} />
       )}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-gray-200 bg-white transition-transform duration-200 lg:relative lg:z-auto lg:translate-x-0",
+          "fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-gray-200 bg-white transition-transform duration-200 lg:relative lg:z-auto",
           collapsed ? "-translate-x-full" : "translate-x-0"
         )}
       >
@@ -434,7 +424,7 @@ function Sidebar({
             T
           </div>
           <span className="text-sm font-semibold text-gray-900">Taskflow</span>
-          <button onClick={onToggle} className="ml-auto rounded-md p-1 text-gray-400 hover:text-gray-600 lg:hidden">
+          <button onClick={onToggle} className="ml-auto rounded-md p-1 text-gray-400 hover:text-gray-600">
             <IconX />
           </button>
         </div>
@@ -839,23 +829,262 @@ function KanbanBoard({
   );
 }
 
-/* ─── List View ─── */
+/* ─── List View (Sortable Row) ─── */
+
+function SortableListRow({
+  task,
+  isActive,
+  onEdit,
+  onDelete,
+}: {
+  task: Task;
+  isActive?: boolean;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: task.id });
+
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition: transition ?? "transform 200ms ease",
+    ...(isActive ? { visibility: "hidden" as const } : {}),
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      data-task-id={task.id}
+      className="group grid grid-cols-[20px_1fr_100px_140px_80px] items-center gap-3 border-b border-gray-100 bg-white px-4 py-3 transition-colors hover:bg-gray-50"
+    >
+      <button
+        className="cursor-grab rounded p-0.5 text-gray-300 hover:text-gray-500 active:cursor-grabbing"
+        {...attributes}
+        {...listeners}
+      >
+        <IconGrip className="h-3.5 w-3.5" />
+      </button>
+      <div className="min-w-0">
+        <p className="truncate text-sm font-medium text-gray-900">{task.title}</p>
+        {task.description && <p className="mt-0.5 truncate text-xs text-gray-500">{task.description}</p>}
+        {task.tags && task.tags.length > 0 && (
+          <div className="mt-1.5 flex flex-wrap gap-1">
+            {task.tags.slice(0, 3).map((tag) => <Tag key={tag}>{tag}</Tag>)}
+          </div>
+        )}
+      </div>
+      <div>
+        <PriorityBadge priority={task.priority} />
+      </div>
+      <div>
+        {task.assignee ? (
+          <div className="flex items-center gap-1.5">
+            <Avatar initials={task.assignee.initials} color={task.assignee.color} />
+            <span className="truncate text-xs text-gray-600">{task.assignee.name}</span>
+          </div>
+        ) : (
+          <span className="text-xs text-gray-400">Unassigned</span>
+        )}
+      </div>
+      <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <button
+          onClick={onEdit}
+          className="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+          title="Edit"
+        >
+          <IconEdit className="h-3.5 w-3.5" />
+        </button>
+        <button
+          onClick={onDelete}
+          className="rounded-md p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-500"
+          title="Delete"
+        >
+          <IconTrash className="h-3.5 w-3.5" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function ListOverlayRow({ task }: { task: Task }) {
+  return (
+    <div className="grid grid-cols-[20px_1fr_100px_140px_80px] items-center gap-3 rounded-lg border border-gray-200 bg-white px-4 py-3 shadow-lg ring-2 ring-brand-500/20">
+      <IconGrip className="h-3.5 w-3.5 text-gray-400" />
+      <div className="min-w-0">
+        <p className="truncate text-sm font-medium text-gray-900">{task.title}</p>
+        {task.description && <p className="mt-0.5 truncate text-xs text-gray-500">{task.description}</p>}
+      </div>
+      <div><PriorityBadge priority={task.priority} /></div>
+      <div>
+        {task.assignee ? (
+          <div className="flex items-center gap-1.5">
+            <Avatar initials={task.assignee.initials} color={task.assignee.color} />
+            <span className="truncate text-xs text-gray-600">{task.assignee.name}</span>
+          </div>
+        ) : (
+          <span className="text-xs text-gray-400">Unassigned</span>
+        )}
+      </div>
+      <div />
+    </div>
+  );
+}
+
+function ListStatusGroup({
+  status,
+  label,
+  icon,
+  tasks,
+  activeTaskId,
+  onEditTask,
+  onDeleteTask,
+}: {
+  status: TaskStatus;
+  label: string;
+  icon: string;
+  tasks: Task[];
+  activeTaskId: string | null;
+  onEditTask: (t: Task) => void;
+  onDeleteTask: (t: Task) => void;
+}) {
+  const { setNodeRef, isOver } = useDroppable({
+    id: `list-group-${status}`,
+    data: { type: "list-group", status },
+  });
+
+  return (
+    <div className={cn(
+      "overflow-hidden rounded-xl border bg-white transition-colors duration-150",
+      isOver ? "border-brand-300 bg-brand-50/30" : "border-gray-200"
+    )}>
+      <div className="flex items-center gap-2 border-b border-gray-200 bg-gray-50 px-4 py-2.5">
+        <span className="text-sm opacity-60">{icon}</span>
+        <span className="text-xs font-semibold text-gray-700">{label}</span>
+        <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-gray-200 px-1.5 text-2xs font-medium text-gray-600">
+          {tasks.length}
+        </span>
+      </div>
+      <div ref={setNodeRef} className="min-h-[48px]">
+        <SortableContext items={tasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
+          {tasks.map((t) => (
+            <SortableListRow
+              key={t.id}
+              task={t}
+              isActive={t.id === activeTaskId}
+              onEdit={() => onEditTask(t)}
+              onDelete={() => onDeleteTask(t)}
+            />
+          ))}
+        </SortableContext>
+        {tasks.length === 0 && (
+          <div className="flex h-12 items-center justify-center text-xs text-gray-400">
+            Drop tasks here
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 function ListView({
   tasks,
   onEditTask,
   onDeleteTask,
+  onReorder,
 }: {
   tasks: Task[];
   onEditTask: (t: Task) => void;
   onDeleteTask: (t: Task) => void;
+  onReorder: (taskId: string, newStatus: TaskStatus, newIndex: number) => void;
 }) {
-  const sorted = useMemo(() => {
-    const order: Record<TaskStatus, number> = { in_progress: 0, todo: 1, backlog: 2, done: 3 };
-    return [...tasks].sort((a, b) => order[a.status] - order[b.status] || a.order - b.order);
+  const [activeTask, setActiveTask] = useState<Task | null>(null);
+  const [activeWidth, setActiveWidth] = useState<number | null>(null);
+
+  const baseByStatus = useMemo(() => {
+    const map: Record<TaskStatus, Task[]> = { backlog: [], todo: [], in_progress: [], done: [] };
+    for (const t of tasks) map[t.status].push(t);
+    for (const key of Object.keys(map) as TaskStatus[]) {
+      map[key].sort((a, b) => a.order - b.order);
+    }
+    return map;
   }, [tasks]);
 
-  if (sorted.length === 0) {
+  const [liveColumns, setLiveColumns] = useState(baseByStatus);
+  useEffect(() => { setLiveColumns(baseByStatus); }, [baseByStatus]);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
+  );
+
+  function findColumn(id: string): TaskStatus | null {
+    if (typeof id === "string" && id.startsWith("list-group-")) {
+      return id.replace("list-group-", "") as TaskStatus;
+    }
+    for (const [status, items] of Object.entries(liveColumns)) {
+      if (items.some((t) => t.id === id)) return status as TaskStatus;
+    }
+    return null;
+  }
+
+  function handleDragStart(event: DragStartEvent) {
+    const task = tasks.find((t) => t.id === event.active.id);
+    setActiveTask(task ?? null);
+    const el = document.querySelector(`[data-task-id="${event.active.id}"]`);
+    setActiveWidth(el instanceof HTMLElement ? el.getBoundingClientRect().width : null);
+  }
+
+  function handleDragOver(event: DragOverEvent) {
+    const { active, over } = event;
+    if (!over) return;
+    const activeId = active.id as string;
+    const overId = over.id as string;
+    const activeCol = findColumn(activeId);
+    const overCol = findColumn(overId);
+    if (!activeCol || !overCol) return;
+
+    if (activeCol !== overCol) {
+      setLiveColumns((prev) => {
+        const src = [...prev[activeCol]];
+        const dst = [...prev[overCol]];
+        const ai = src.findIndex((t) => t.id === activeId);
+        if (ai === -1) return prev;
+        const [moved] = src.splice(ai, 1);
+        let insertAt = dst.length;
+        if (!overId.startsWith("list-group-")) {
+          const oi = dst.findIndex((t) => t.id === overId);
+          if (oi !== -1) insertAt = oi;
+        }
+        dst.splice(insertAt, 0, { ...moved, status: overCol });
+        return { ...prev, [activeCol]: src, [overCol]: dst };
+      });
+    } else {
+      setLiveColumns((prev) => {
+        const items = [...prev[activeCol]];
+        const ai = items.findIndex((t) => t.id === activeId);
+        const oi = items.findIndex((t) => t.id === overId);
+        if (ai === -1 || oi === -1 || ai === oi) return prev;
+        return { ...prev, [activeCol]: arrayMove(items, ai, oi) };
+      });
+    }
+  }
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    setActiveTask(null);
+    if (!over) { setLiveColumns(baseByStatus); return; }
+    const activeId = active.id as string;
+    for (const [status, items] of Object.entries(liveColumns)) {
+      const idx = items.findIndex((t) => t.id === activeId);
+      if (idx !== -1) { onReorder(activeId, status as TaskStatus, idx); return; }
+    }
+  }
+
+  function handleDragCancel() {
+    setActiveTask(null);
+    setLiveColumns(baseByStatus);
+  }
+
+  if (tasks.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-gray-300 py-16 text-gray-400">
         <IconFolder className="mb-3 h-8 w-8" />
@@ -866,70 +1095,36 @@ function ListView({
   }
 
   return (
-    <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
-      {/* Header */}
-      <div className="grid grid-cols-[1fr_120px_100px_140px_80px] gap-3 border-b border-gray-200 bg-gray-50 px-4 py-2.5 text-2xs font-semibold uppercase tracking-wider text-gray-500">
-        <div>Task</div>
-        <div>Status</div>
-        <div>Priority</div>
-        <div>Assignee</div>
-        <div className="text-right">Actions</div>
-      </div>
-      {/* Rows */}
-      <div className="divide-y divide-gray-100">
-        {sorted.map((t) => (
-          <div
-            key={t.id}
-            className="group grid grid-cols-[1fr_120px_100px_140px_80px] items-center gap-3 px-4 py-3 transition-colors hover:bg-gray-50"
-          >
-            <div className="min-w-0">
-              <p className="truncate text-sm font-medium text-gray-900">{t.title}</p>
-              {t.description && <p className="mt-0.5 truncate text-xs text-gray-500">{t.description}</p>}
-              {t.tags && t.tags.length > 0 && (
-                <div className="mt-1.5 flex flex-wrap gap-1">
-                  {t.tags.slice(0, 3).map((tag) => <Tag key={tag}>{tag}</Tag>)}
-                </div>
-              )}
-            </div>
-            <div className="flex items-center gap-1.5">
-              <StatusDot status={t.status} />
-              <span className="text-xs text-gray-600">
-                {STATUS_COLUMNS.find((c) => c.key === t.status)?.label}
-              </span>
-            </div>
-            <div>
-              <PriorityBadge priority={t.priority} />
-            </div>
-            <div>
-              {t.assignee ? (
-                <div className="flex items-center gap-1.5">
-                  <Avatar initials={t.assignee.initials} color={t.assignee.color} />
-                  <span className="truncate text-xs text-gray-600">{t.assignee.name}</span>
-                </div>
-              ) : (
-                <span className="text-xs text-gray-400">Unassigned</span>
-              )}
-            </div>
-            <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-              <button
-                onClick={() => onEditTask(t)}
-                className="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
-                title="Edit"
-              >
-                <IconEdit className="h-3.5 w-3.5" />
-              </button>
-              <button
-                onClick={() => onDeleteTask(t)}
-                className="rounded-md p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-500"
-                title="Delete"
-              >
-                <IconTrash className="h-3.5 w-3.5" />
-              </button>
-            </div>
-          </div>
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCorners}
+      onDragStart={handleDragStart}
+      onDragOver={handleDragOver}
+      onDragEnd={handleDragEnd}
+      onDragCancel={handleDragCancel}
+    >
+      <div className="space-y-4">
+        {STATUS_COLUMNS.map((col) => (
+          <ListStatusGroup
+            key={col.key}
+            status={col.key}
+            label={col.label}
+            icon={col.icon}
+            tasks={liveColumns[col.key]}
+            activeTaskId={activeTask?.id ?? null}
+            onEditTask={onEditTask}
+            onDeleteTask={onDeleteTask}
+          />
         ))}
       </div>
-    </div>
+      <DragOverlay dropAnimation={{ duration: 200, easing: "ease" }}>
+        {activeTask ? (
+          <div style={activeWidth ? { width: activeWidth } : undefined}>
+            <ListOverlayRow task={activeTask} />
+          </div>
+        ) : null}
+      </DragOverlay>
+    </DndContext>
   );
 }
 
@@ -1071,7 +1266,8 @@ export default function App() {
         <header className="flex h-14 shrink-0 items-center gap-3 border-b border-gray-200 bg-white px-4">
           <button
             onClick={() => setSidebarOpen((v) => !v)}
-            className="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 lg:hidden"
+            className="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+            title={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
           >
             <IconMenu />
           </button>
@@ -1185,6 +1381,7 @@ export default function App() {
               tasks={filteredTasks}
               onEditTask={(t) => setTaskModal({ mode: "edit", task: t })}
               onDeleteTask={handleDeleteTask}
+              onReorder={handleReorder}
             />
           )}
         </main>
