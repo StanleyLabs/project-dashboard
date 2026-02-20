@@ -3,6 +3,7 @@ import {
   DndContext,
   DragOverlay,
   PointerSensor,
+  useDroppable,
   useSensor,
   useSensors,
   closestCorners,
@@ -14,6 +15,7 @@ import {
   SortableContext,
   useSortable,
   verticalListSortingStrategy,
+  arrayMove,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import type { Project, Task, TaskPriority, TaskStatus, ViewMode } from "./lib/types";
@@ -517,8 +519,8 @@ function SortableTaskCard({
 
   const style = {
     transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.4 : 1,
+    transition: transition ?? "transform 200ms ease",
+    opacity: isDragging ? 0 : 1,
   };
 
   return (
@@ -605,14 +607,16 @@ function KanbanColumn({
   onEditTask: (t: Task) => void;
   onDeleteTask: (t: Task) => void;
 }) {
-  const { setNodeRef } = useSortable({
+  const { setNodeRef, isOver } = useDroppable({
     id: `column-${status}`,
     data: { type: "column", status },
-    disabled: true,
   });
 
   return (
-    <div className="flex min-w-[280px] flex-col rounded-xl bg-gray-50 border border-gray-200/80">
+    <div className={cn(
+      "flex min-w-[280px] flex-col rounded-xl border transition-colors duration-150",
+      isOver ? "bg-brand-50/50 border-brand-200" : "bg-gray-50 border-gray-200/80"
+    )}>
       <div className="flex items-center justify-between px-3 py-3">
         <div className="flex items-center gap-2">
           <span className="text-sm opacity-60">{icon}</span>
@@ -667,27 +671,34 @@ function KanbanBoard({
 }) {
   const [activeTask, setActiveTask] = useState<Task | null>(null);
 
-  const tasksByStatus = useMemo(() => {
+  // Build the "source of truth" columns from props
+  const baseByStatus = useMemo(() => {
     const map: Record<TaskStatus, Task[]> = { backlog: [], todo: [], in_progress: [], done: [] };
     for (const t of tasks) map[t.status].push(t);
-    // Sort each column by order
     for (const key of Object.keys(map) as TaskStatus[]) {
       map[key].sort((a, b) => a.order - b.order);
     }
     return map;
   }, [tasks]);
 
+  // Live preview state — mirrors baseByStatus but updates during drag
+  const [liveColumns, setLiveColumns] = useState(baseByStatus);
+
+  // Sync live state when tasks change from outside (create/delete/edit)
+  useEffect(() => {
+    setLiveColumns(baseByStatus);
+  }, [baseByStatus]);
+
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
   );
 
-  function findColumnForItem(id: string): TaskStatus | null {
-    // Check if it's a column id
-    for (const col of STATUS_COLUMNS) {
-      if (id === `column-${col.key}`) return col.key;
+  // Find which column an item id lives in within live state
+  function findColumn(id: string): TaskStatus | null {
+    if (typeof id === "string" && id.startsWith("column-")) {
+      return id.replace("column-", "") as TaskStatus;
     }
-    // Find which column contains this task
-    for (const [status, items] of Object.entries(tasksByStatus)) {
+    for (const [status, items] of Object.entries(liveColumns)) {
       if (items.some((t) => t.id === id)) return status as TaskStatus;
     }
     return null;
@@ -699,43 +710,90 @@ function KanbanBoard({
   }
 
   function handleDragOver(event: DragOverEvent) {
-    // We handle everything in dragEnd for simplicity
-    void event;
-  }
-
-  function handleDragEnd(event: DragEndEvent) {
-    setActiveTask(null);
     const { active, over } = event;
     if (!over) return;
 
     const activeId = active.id as string;
     const overId = over.id as string;
 
-    const activeCol = findColumnForItem(activeId);
-    let overCol = findColumnForItem(overId);
-
-    // If dropped on a column header area
-    if (overId.startsWith("column-")) {
-      overCol = overId.replace("column-", "") as TaskStatus;
-    }
-
+    const activeCol = findColumn(activeId);
+    const overCol = findColumn(overId);
     if (!activeCol || !overCol) return;
 
-    // Find the index in the target column
-    const targetItems = tasksByStatus[overCol];
-    let newIndex = targetItems.length; // default: end
+    // Moving between columns
+    if (activeCol !== overCol) {
+      setLiveColumns((prev) => {
+        const sourceItems = [...prev[activeCol]];
+        const destItems = [...prev[overCol]];
+        const activeIndex = sourceItems.findIndex((t) => t.id === activeId);
+        if (activeIndex === -1) return prev;
 
-    if (!overId.startsWith("column-")) {
-      const overIndex = targetItems.findIndex((t) => t.id === overId);
-      if (overIndex !== -1) {
-        newIndex = overIndex;
+        const [movedItem] = sourceItems.splice(activeIndex, 1);
+
+        // Find insert index
+        let insertIndex = destItems.length;
+        if (!overId.startsWith("column-")) {
+          const overIndex = destItems.findIndex((t) => t.id === overId);
+          if (overIndex !== -1) insertIndex = overIndex;
+        }
+
+        destItems.splice(insertIndex, 0, { ...movedItem, status: overCol });
+
+        return {
+          ...prev,
+          [activeCol]: sourceItems,
+          [overCol]: destItems,
+        };
+      });
+    } else {
+      // Reordering within same column
+      setLiveColumns((prev) => {
+        const items = [...prev[activeCol]];
+        const activeIndex = items.findIndex((t) => t.id === activeId);
+        const overIndex = items.findIndex((t) => t.id === overId);
+        if (activeIndex === -1 || overIndex === -1 || activeIndex === overIndex) return prev;
+
+        return {
+          ...prev,
+          [activeCol]: arrayMove(items, activeIndex, overIndex),
+        };
+      });
+    }
+  }
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    setActiveTask(null);
+
+    if (!over) {
+      // Cancelled — reset to base
+      setLiveColumns(baseByStatus);
+      return;
+    }
+
+    const activeId = active.id as string;
+
+    // Find the final column and index from live state
+    let finalStatus: TaskStatus | null = null;
+    let finalIndex = 0;
+    for (const [status, items] of Object.entries(liveColumns)) {
+      const idx = items.findIndex((t) => t.id === activeId);
+      if (idx !== -1) {
+        finalStatus = status as TaskStatus;
+        finalIndex = idx;
+        break;
       }
     }
 
-    // If same position, skip
-    if (activeCol === overCol && activeId === overId) return;
+    if (!finalStatus) return;
 
-    onReorder(activeId, overCol, newIndex);
+    // Commit to the real store
+    onReorder(activeId, finalStatus, finalIndex);
+  }
+
+  function handleDragCancel() {
+    setActiveTask(null);
+    setLiveColumns(baseByStatus);
   }
 
   return (
@@ -745,6 +803,7 @@ function KanbanBoard({
       onDragStart={handleDragStart}
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
+      onDragCancel={handleDragCancel}
     >
       <div className="flex gap-4 overflow-x-auto pb-4">
         {STATUS_COLUMNS.map((col) => (
@@ -753,14 +812,14 @@ function KanbanBoard({
             status={col.key}
             label={col.label}
             icon={col.icon}
-            tasks={tasksByStatus[col.key]}
+            tasks={liveColumns[col.key]}
             onAddTask={() => onAddTask(col.key)}
             onEditTask={onEditTask}
             onDeleteTask={onDeleteTask}
           />
         ))}
       </div>
-      <DragOverlay>
+      <DragOverlay dropAnimation={{ duration: 200, easing: "ease" }}>
         {activeTask ? (
           <div className="w-[280px]">
             <TaskCardInner task={activeTask} onEdit={() => {}} onDelete={() => {}} overlay />
