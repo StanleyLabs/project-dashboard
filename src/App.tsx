@@ -508,19 +508,22 @@ function Sidebar({
 
 function SortableTaskCard({
   task,
+  isActive,
   onEdit,
   onDelete,
 }: {
   task: Task;
+  isActive?: boolean;
   onEdit: () => void;
   onDelete: () => void;
 }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: task.id });
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: task.id });
 
+  const hidden = isActive;
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition: transition ?? "transform 200ms ease",
-    opacity: isDragging ? 0 : 1,
+    opacity: hidden ? 0 : 1,
   };
 
   return (
@@ -595,6 +598,7 @@ function KanbanColumn({
   label,
   icon,
   tasks,
+  activeTaskId,
   onAddTask,
   onEditTask,
   onDeleteTask,
@@ -603,6 +607,7 @@ function KanbanColumn({
   label: string;
   icon: string;
   tasks: Task[];
+  activeTaskId: string | null;
   onAddTask: () => void;
   onEditTask: (t: Task) => void;
   onDeleteTask: (t: Task) => void;
@@ -639,6 +644,7 @@ function KanbanColumn({
             <SortableTaskCard
               key={t.id}
               task={t}
+              isActive={t.id === activeTaskId}
               onEdit={() => onEditTask(t)}
               onDelete={() => onDeleteTask(t)}
             />
@@ -813,6 +819,7 @@ function KanbanBoard({
             label={col.label}
             icon={col.icon}
             tasks={liveColumns[col.key]}
+            activeTaskId={activeTask?.id ?? null}
             onAddTask={() => onAddTask(col.key)}
             onEditTask={onEditTask}
             onDeleteTask={onDeleteTask}
