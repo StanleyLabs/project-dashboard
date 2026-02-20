@@ -219,13 +219,17 @@ function Modal({
 
 /* ─── Task Form ─── */
 
+type KnownAssignee = { name: string; initials: string; color: string };
+
 function TaskForm({
   initial,
+  knownAssignees,
   onSubmit,
   onCancel,
 }: {
-  initial: { title: string; description: string; priority: TaskPriority; status: TaskStatus; tags: string; assignee: string };
-  onSubmit: (v: { title: string; description: string; priority: TaskPriority; status: TaskStatus; tags: string[]; assignee: string }) => void;
+  initial: { title: string; description: string; priority: TaskPriority; status: TaskStatus; tags: string; assignee: string; assigneeColor: string };
+  knownAssignees: KnownAssignee[];
+  onSubmit: (v: { title: string; description: string; priority: TaskPriority; status: TaskStatus; tags: string[]; assignee: string; assigneeColor: string }) => void;
   onCancel: () => void;
 }) {
   const [title, setTitle] = useState(initial.title);
@@ -234,6 +238,36 @@ function TaskForm({
   const [status, setStatus] = useState<TaskStatus>(initial.status);
   const [tags, setTags] = useState(initial.tags);
   const [assignee, setAssignee] = useState(initial.assignee);
+  const [assigneeColor, setAssigneeColor] = useState(initial.assigneeColor || nameToColor(initial.assignee || ""));
+  const [assigneeFocused, setAssigneeFocused] = useState(false);
+  const assigneeRef = useRef<HTMLDivElement>(null);
+
+  // Filter known assignees by input
+  const suggestions = useMemo(() => {
+    if (!assignee.trim()) return knownAssignees;
+    const q = assignee.toLowerCase();
+    return knownAssignees.filter((a) => a.name.toLowerCase().includes(q));
+  }, [assignee, knownAssignees]);
+
+  const showSuggestions = assigneeFocused && suggestions.length > 0;
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    if (!showSuggestions) return;
+    const handler = (e: MouseEvent) => {
+      if (assigneeRef.current && !assigneeRef.current.contains(e.target as Node)) {
+        setAssigneeFocused(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [showSuggestions]);
+
+  function selectAssignee(a: KnownAssignee) {
+    setAssignee(a.name);
+    setAssigneeColor(a.color);
+    setAssigneeFocused(false);
+  }
 
   return (
     <form
@@ -247,6 +281,7 @@ function TaskForm({
           status,
           tags: tags.split(",").map((x) => x.trim()).filter(Boolean),
           assignee: assignee.trim(),
+          assigneeColor,
         });
       }}
     >
@@ -298,20 +333,70 @@ function TaskForm({
           </select>
         </label>
       </div>
-      <label className="block">
+      <div className="block" ref={assigneeRef}>
         <span className="mb-1.5 block text-xs font-medium text-gray-700">Assignee</span>
         <div className="flex items-center gap-2">
           {assignee.trim() && (
-            <Avatar initials={nameToInitials(assignee)} color={nameToColor(assignee)} />
+            <Avatar initials={nameToInitials(assignee)} color={assigneeColor} />
           )}
-          <input
-            value={assignee}
-            onChange={(e) => setAssignee(e.target.value)}
-            className="block w-full rounded-lg border border-gray-200 bg-raised px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/25"
-            placeholder="e.g. Ken Stanley"
-          />
+          <div className="relative flex-1">
+            <input
+              value={assignee}
+              onChange={(e) => {
+                setAssignee(e.target.value);
+                if (e.target.value.trim() && !knownAssignees.some((a) => a.name === e.target.value)) {
+                  setAssigneeColor(nameToColor(e.target.value));
+                }
+              }}
+              onFocus={() => setAssigneeFocused(true)}
+              className="block w-full rounded-lg border border-gray-200 bg-raised px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/25"
+              placeholder="Type a name…"
+            />
+            {showSuggestions && (
+              <div className="absolute left-0 right-0 top-full z-10 mt-1 max-h-40 overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lifted animate-fade-in">
+                {suggestions.map((a) => (
+                  <button
+                    key={a.name}
+                    type="button"
+                    className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm text-gray-900 hover:bg-canvas transition-colors"
+                    onMouseDown={(e) => { e.preventDefault(); selectAssignee(a); }}
+                  >
+                    <Avatar initials={a.initials} color={a.color} />
+                    <span>{a.name}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          {assignee.trim() && (
+            <button
+              type="button"
+              onClick={() => { setAssignee(""); setAssigneeFocused(false); }}
+              className="rounded-md p-1 text-gray-400 hover:text-gray-600"
+              title="Clear assignee"
+            >
+              <IconX className="h-3.5 w-3.5" />
+            </button>
+          )}
         </div>
-      </label>
+        {assignee.trim() && (
+          <div className="mt-2 flex items-center gap-1.5">
+            <span className="text-2xs text-gray-500">Color:</span>
+            {AVATAR_COLORS.map((c) => (
+              <button
+                key={c}
+                type="button"
+                onClick={() => setAssigneeColor(c)}
+                className={cn(
+                  "h-5 w-5 rounded-full border-2 transition-all",
+                  assigneeColor === c ? "border-sidebar scale-110" : "border-transparent hover:scale-105"
+                )}
+                style={{ backgroundColor: c }}
+              />
+            ))}
+          </div>
+        )}
+      </div>
       <label className="block">
         <span className="mb-1.5 block text-xs font-medium text-gray-700">Tags <span className="font-normal text-gray-400">(comma-separated)</span></span>
         <input
@@ -1226,6 +1311,17 @@ export default function App() {
   const totalTasks = tasksApi.tasks?.length ?? 0;
   const doneTasks = statusCounts["done"] ?? 0;
 
+  // Deduplicated list of all known assignees across tasks
+  const knownAssignees = useMemo(() => {
+    const map = new Map<string, KnownAssignee>();
+    for (const t of tasksApi.tasks ?? []) {
+      if (t.assignee && !map.has(t.assignee.name)) {
+        map.set(t.assignee.name, { name: t.assignee.name, initials: t.assignee.initials, color: t.assignee.color });
+      }
+    }
+    return Array.from(map.values());
+  }, [tasksApi.tasks]);
+
   // Handlers
   const handleCreateProject = useCallback(async (data: { name: string; description: string; color: string }) => {
     const p = await projectsApi.create(data);
@@ -1248,7 +1344,7 @@ export default function App() {
     }
   }, [projectsApi, activeProjectId]);
 
-  const handleCreateTask = useCallback(async (data: { title: string; description: string; priority: TaskPriority; status: TaskStatus; tags: string[]; assignee: string }) => {
+  const handleCreateTask = useCallback(async (data: { title: string; description: string; priority: TaskPriority; status: TaskStatus; tags: string[]; assignee: string; assigneeColor: string }) => {
     if (!activeProjectId) return;
     const maxOrder = Math.max(0, ...(tasksApi.tasks ?? []).filter((t) => t.status === data.status).map((t) => t.order));
     await tasksApi.create({
@@ -1260,13 +1356,13 @@ export default function App() {
       tags: data.tags,
       order: maxOrder + 1,
       assignee: data.assignee
-        ? { name: data.assignee, initials: nameToInitials(data.assignee), color: nameToColor(data.assignee) }
+        ? { name: data.assignee, initials: nameToInitials(data.assignee), color: data.assigneeColor }
         : undefined,
     });
     setTaskModal(null);
   }, [activeProjectId, tasksApi]);
 
-  const handleUpdateTask = useCallback(async (data: { title: string; description: string; priority: TaskPriority; status: TaskStatus; tags: string[]; assignee: string }) => {
+  const handleUpdateTask = useCallback(async (data: { title: string; description: string; priority: TaskPriority; status: TaskStatus; tags: string[]; assignee: string; assigneeColor: string }) => {
     if (!taskModal?.task) return;
     await tasksApi.update(taskModal.task.id, {
       title: data.title,
@@ -1275,7 +1371,7 @@ export default function App() {
       status: data.status,
       tags: data.tags,
       assignee: data.assignee
-        ? { name: data.assignee, initials: nameToInitials(data.assignee), color: nameToColor(data.assignee) }
+        ? { name: data.assignee, initials: nameToInitials(data.assignee), color: data.assigneeColor }
         : undefined,
     });
     setTaskModal(null);
@@ -1467,7 +1563,9 @@ export default function App() {
                 status: taskModal.task?.status ?? taskModal.defaultStatus ?? "todo",
                 tags: (taskModal.task?.tags ?? []).join(", "),
                 assignee: taskModal.task?.assignee?.name ?? "",
+                assigneeColor: taskModal.task?.assignee?.color ?? "",
               }}
+              knownAssignees={knownAssignees}
               onSubmit={taskModal.mode === "create" ? handleCreateTask : handleUpdateTask}
               onCancel={() => setTaskModal(null)}
             />
