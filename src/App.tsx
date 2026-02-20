@@ -304,10 +304,10 @@ function KanbanCard({
   onDelete: () => void;
 }) {
   return (
-    <div className="flex h-[168px] flex-col rounded-2xl border border-[color:var(--border)] bg-surface p-4 shadow-card">
+    <div className="flex h-[168px] flex-col overflow-hidden rounded-2xl border border-[color:var(--border)] bg-surface p-4 shadow-card">
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 overflow-hidden">
             <Pill tone="brand">{task.priority.toUpperCase()}</Pill>
             {task.tags?.slice(0, 2).map((t) => (
               <Pill key={t}>{t}</Pill>
