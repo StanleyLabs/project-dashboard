@@ -675,6 +675,7 @@ function KanbanBoard({
   onReorder: (taskId: string, newStatus: TaskStatus, newIndex: number) => void;
 }) {
   const [activeTask, setActiveTask] = useState<Task | null>(null);
+  const [activeWidth, setActiveWidth] = useState<number | null>(null);
 
   // Build the "source of truth" columns from props
   const baseByStatus = useMemo(() => {
@@ -712,6 +713,8 @@ function KanbanBoard({
   function handleDragStart(event: DragStartEvent) {
     const task = tasks.find((t) => t.id === event.active.id);
     setActiveTask(task ?? null);
+    const node = event.active.rect.current.initial;
+    setActiveWidth(node ? node.width : null);
   }
 
   function handleDragOver(event: DragOverEvent) {
@@ -827,7 +830,7 @@ function KanbanBoard({
       </div>
       <DragOverlay dropAnimation={{ duration: 200, easing: "ease" }}>
         {activeTask ? (
-          <div className="w-[280px]">
+          <div style={activeWidth ? { width: activeWidth } : { width: 280 }}>
             <TaskCardInner task={activeTask} onEdit={() => {}} onDelete={() => {}} overlay />
           </div>
         ) : null}
