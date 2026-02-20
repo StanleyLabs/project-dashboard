@@ -414,8 +414,8 @@ function Sidebar({
       )}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-gray-200 bg-white transition-transform duration-200 lg:relative lg:z-auto",
-          collapsed ? "-translate-x-full" : "translate-x-0"
+          "fixed inset-y-0 left-0 z-50 flex w-64 shrink-0 flex-col border-r border-gray-200 bg-white transition-all duration-200 lg:relative lg:z-auto",
+          collapsed ? "-translate-x-full lg:ml-[-256px]" : "translate-x-0 lg:ml-0"
         )}
       >
         {/* Logo */}
