@@ -183,6 +183,7 @@ function Modal({
   width?: string;
 }) {
   const overlayRef = useRef<HTMLDivElement>(null);
+  const mouseDownOnOverlay = useRef(false);
 
   useEffect(() => {
     if (!open) return;
@@ -197,7 +198,11 @@ function Modal({
     <div
       ref={overlayRef}
       className="fixed inset-0 z-50 flex items-start justify-center bg-sidebar/60 backdrop-blur-sm px-4 pt-[15vh] animate-fade-in"
-      onClick={(e) => { if (e.target === overlayRef.current) onClose(); }}
+      onMouseDown={(e) => { mouseDownOnOverlay.current = e.target === overlayRef.current; }}
+      onMouseUp={(e) => {
+        if (mouseDownOnOverlay.current && e.target === overlayRef.current) onClose();
+        mouseDownOnOverlay.current = false;
+      }}
     >
       <div className={cn("w-full rounded-2xl bg-white shadow-overlay animate-scale-in border border-gray-200", width)}>
         <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4">
@@ -307,7 +312,7 @@ function TaskForm({
           <select
             value={status}
             onChange={(e) => setStatus(e.target.value as TaskStatus)}
-            className="block w-full rounded-lg border border-gray-200 bg-raised px-3 py-2 text-sm text-gray-900 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/25"
+            className="select-styled block w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/25"
           >
             {STATUS_COLUMNS.map((c) => (
               <option key={c.key} value={c.key}>{c.label}</option>
@@ -319,7 +324,7 @@ function TaskForm({
           <select
             value={priority}
             onChange={(e) => setPriority(e.target.value as TaskPriority)}
-            className="block w-full rounded-lg border border-gray-200 bg-raised px-3 py-2 text-sm text-gray-900 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/25"
+            className="select-styled block w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/25"
           >
             <option value="urgent">Urgent</option>
             <option value="high">High</option>
@@ -1364,16 +1369,21 @@ export default function App() {
   const totalTasks = tasksApi.tasks?.length ?? 0;
   const doneTasks = statusCounts["done"] ?? 0;
 
-  // Deduplicated list of all known assignees across tasks
-  const knownAssignees = useMemo(() => {
+  // Deduplicated list of all known assignees across ALL projects
+  const [allAssignees, setAllAssignees] = useState<KnownAssignee[]>([]);
+  const refreshAssignees = useCallback(async () => {
+    const all = await repo.listAllTasks();
     const map = new Map<string, KnownAssignee>();
-    for (const t of tasksApi.tasks ?? []) {
+    for (const t of all) {
       if (t.assignee && !map.has(t.assignee.name)) {
         map.set(t.assignee.name, { name: t.assignee.name, initials: t.assignee.initials, color: t.assignee.color });
       }
     }
-    return Array.from(map.values());
-  }, [tasksApi.tasks]);
+    setAllAssignees(Array.from(map.values()));
+  }, [repo]);
+
+  // Refresh assignees when tasks change
+  useEffect(() => { refreshAssignees(); }, [tasksApi.tasks, refreshAssignees]);
 
   // Handlers
   const handleCreateProject = useCallback(async (data: { name: string; description: string; color: string }) => {
@@ -1630,7 +1640,7 @@ export default function App() {
                 assignee: taskModal.task?.assignee?.name ?? "",
                 assigneeColor: taskModal.task?.assignee?.color ?? "",
               }}
-              knownAssignees={knownAssignees}
+              knownAssignees={allAssignees}
               onSubmit={taskModal.mode === "create" ? handleCreateTask : handleUpdateTask}
               onCancel={() => setTaskModal(null)}
             />

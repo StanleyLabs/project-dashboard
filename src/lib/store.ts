@@ -11,6 +11,7 @@ export type DashboardRepo = {
   createProject(data: Omit<Project, "id" | "createdAt" | "updatedAt">): Promise<Project>;
   updateProject(id: string, patch: ProjectUpdate): Promise<Project>;
   deleteProject(id: string): Promise<void>;
+  listAllTasks(): Promise<Task[]>;
   listTasks(projectId: string): Promise<Task[]>;
   createTask(input: TaskCreate): Promise<Task>;
   updateTask(id: string, patch: TaskUpdate): Promise<Task>;
@@ -53,6 +54,9 @@ export function createMockRepo(): DashboardRepo {
     async deleteProject(id) {
       projects = projects.filter((p) => p.id !== id);
       tasks = tasks.filter((t) => t.projectId !== id);
+    },
+    async listAllTasks() {
+      return [...tasks];
     },
     async listTasks(projectId) {
       return tasks
