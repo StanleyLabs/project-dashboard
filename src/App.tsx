@@ -194,7 +194,7 @@ function ThemeToggle() {
         {current.icon}
       </button>
       {open && (
-        <div className="absolute right-0 top-full z-20 mt-1 w-36 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lifted animate-fade-in">
+        <div className="absolute right-0 top-full z-50 mt-1 w-36 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lifted animate-fade-in">
           {options.map((o) => (
             <button
               key={o.value}
@@ -376,7 +376,7 @@ function Modal({
         mouseDownOnOverlay.current = false;
       }}
     >
-      <div className={cn("w-full rounded-2xl bg-white dark:bg-dark-surface shadow-overlay animate-scale-in border border-gray-200", width)}>
+      <div className={cn("w-full rounded-2xl bg-white dark:bg-dark-surface shadow-overlay animate-scale-in border border-gray-200 dark:border-dark-border", width)}>
         <div className="flex items-center justify-between border-b border-gray-100 dark:border-dark-border px-6 py-4">
           <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">{title}</h2>
           <button onClick={onClose} className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 dark:bg-dark-border hover:text-gray-600 transition-colors">
@@ -579,7 +579,7 @@ function TaskForm({
                   <button
                     key={a.name}
                     type="button"
-                    className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm text-gray-900 hover:bg-canvas dark:hover:bg-dark-raised transition-colors"
+                    className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm text-gray-900 dark:text-gray-100 hover:bg-canvas dark:hover:bg-dark-raised transition-colors"
                     onMouseDown={(e) => { e.preventDefault(); selectAssignee(a); }}
                   >
                     <Avatar initials={a.initials} color={a.color} />
@@ -655,7 +655,7 @@ function TaskForm({
               <button
                 key={t}
                 type="button"
-                className="flex w-full items-center px-3 py-1.5 text-left text-sm text-gray-700 hover:bg-canvas dark:hover:bg-dark-raised transition-colors"
+                className="flex w-full items-center px-3 py-1.5 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-canvas dark:hover:bg-dark-raised transition-colors"
                 onMouseDown={(e) => { e.preventDefault(); addTag(t); }}
               >
                 {t}
@@ -668,7 +668,7 @@ function TaskForm({
         <button
           type="button"
           onClick={onCancel}
-          className="rounded-lg border border-gray-200 bg-raised px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:hover:bg-dark-raised"
+          className="rounded-lg border border-gray-200 dark:border-dark-border bg-raised dark:bg-dark-raised px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-dark-border"
         >
           Cancel
         </button>
@@ -749,7 +749,7 @@ function ProjectForm({
         <button
           type="button"
           onClick={onCancel}
-          className="rounded-lg border border-gray-200 bg-raised px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:hover:bg-dark-raised"
+          className="rounded-lg border border-gray-200 dark:border-dark-border bg-raised dark:bg-dark-raised px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-dark-border"
         >
           Cancel
         </button>
@@ -1751,7 +1751,7 @@ export default function App() {
       {/* Main content */}
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Top bar */}
-        <header className="flex h-14 shrink-0 items-center gap-3 border-b border-gray-200 dark:border-dark-border bg-white dark:bg-dark-surface/80 dark:bg-dark-surface/80 backdrop-blur-md px-4">
+        <header className="flex h-14 shrink-0 items-center gap-3 border-b border-gray-200 dark:border-dark-border bg-white/80 dark:bg-dark-surface/80 backdrop-blur-md px-4">
           <button
             onClick={() => setSidebarOpen((v) => !v)}
             className="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 dark:bg-dark-border hover:text-gray-600"
@@ -1779,7 +1779,7 @@ export default function App() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search tasks…"
-                className="h-8 w-48 rounded-lg border border-gray-200 bg-canvas dark:bg-dark-raised pl-8 pr-3 text-xs text-gray-900 placeholder:text-gray-400 focus:border-accent focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+                className="h-8 w-48 rounded-lg border border-gray-200 dark:border-dark-border bg-canvas dark:bg-dark-raised pl-8 pr-3 text-xs text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:border-accent focus:bg-white dark:focus:bg-dark-surface focus:outline-none focus:ring-2 focus:ring-accent/25"
               />
             </div>
 
@@ -1822,7 +1822,7 @@ export default function App() {
 
         {/* Progress bar */}
         {activeProject && totalTasks > 0 && (
-          <div className="border-b border-gray-200 bg-white/80 dark:bg-dark-surface/80 backdrop-blur-md px-4 py-2.5">
+          <div className="border-b border-gray-200 dark:border-dark-border bg-white/80 dark:bg-dark-surface/80 backdrop-blur-md px-4 py-2.5">
             <div className="flex items-center gap-3">
               <div className="flex-1">
                 <div className="h-1.5 overflow-hidden rounded-full bg-gray-100 dark:bg-dark-border">
