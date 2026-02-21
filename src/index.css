@@ -67,6 +67,12 @@ html.dark ::-webkit-scrollbar-thumb:hover {
   background: #4a4a6a;
 }
 
+/* Kanban horizontal scroll */
+.kanban-scroll {
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+
 /* Keep grab cursor during any drag operation */
 body.is-dragging,
 body.is-dragging * {

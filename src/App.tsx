@@ -1083,7 +1083,7 @@ function KanbanColumn({
   return (
     <div
       ref={setNodeRef}
-      className="flex min-w-0 flex-1 flex-col rounded-2xl border border-gray-200 dark:border-dark-border bg-raised dark:bg-dark-raised"
+      className="flex h-full min-w-0 flex-1 flex-col rounded-2xl border border-gray-200 dark:border-dark-border bg-raised dark:bg-dark-raised"
     >
       <div className="flex items-center justify-between px-3.5 py-3">
         <div className="flex items-center gap-2">
@@ -1268,19 +1268,20 @@ function KanbanBoard({
       onDragEnd={handleDragEnd}
       onDragCancel={handleDragCancel}
     >
-      <div className="grid grid-cols-4 gap-4 pb-4">
+      <div className="flex gap-4 pb-4 overflow-x-auto kanban-scroll">
         {STATUS_COLUMNS.map((col) => (
-          <KanbanColumn
-            key={col.key}
-            status={col.key}
-            label={col.label}
-            icon={col.icon}
-            tasks={liveColumns[col.key]}
-            activeTaskId={activeTask?.id ?? null}
-            onAddTask={() => onAddTask(col.key)}
-            onEditTask={onEditTask}
-            onDeleteTask={onDeleteTask}
-          />
+          <div key={col.key} className="min-w-[272px] w-[272px] shrink-0 lg:min-w-0 lg:w-auto lg:flex-1">
+            <KanbanColumn
+              status={col.key}
+              label={col.label}
+              icon={col.icon}
+              tasks={liveColumns[col.key]}
+              activeTaskId={activeTask?.id ?? null}
+              onAddTask={() => onAddTask(col.key)}
+              onEditTask={onEditTask}
+              onDeleteTask={onDeleteTask}
+            />
+          </div>
         ))}
       </div>
       <DragOverlay dropAnimation={{ duration: 200, easing: "ease" }}>
@@ -1320,52 +1321,85 @@ function SortableListRow({
       ref={setNodeRef}
       style={style}
       data-task-id={task.id}
-      className="group grid grid-cols-[20px_1fr_100px_140px_80px] items-center gap-3 border-b border-gray-100 dark:border-dark-border bg-white dark:bg-dark-surface px-4 py-3 transition-colors hover:bg-gray-50 dark:hover:bg-dark-raised"
+      className="group border-b border-gray-100 dark:border-dark-border bg-white dark:bg-dark-surface px-4 py-3 transition-colors hover:bg-gray-50 dark:hover:bg-dark-raised"
     >
-      <button
-        className="cursor-grab rounded p-0.5 text-gray-300 hover:text-gray-500 active:cursor-grabbing"
-        {...attributes}
-        {...listeners}
-      >
-        <IconGrip className="h-3.5 w-3.5" />
-      </button>
-      <div className="min-w-0">
-        <p className="truncate text-sm font-medium text-gray-900 dark:text-gray-100">{task.title}</p>
-        {task.description && <p className="mt-0.5 truncate text-xs text-gray-500 dark:text-gray-400">{task.description}</p>}
-        {task.tags && task.tags.length > 0 && (
-          <div className="mt-1.5 flex flex-wrap gap-1">
-            {task.tags.slice(0, 3).map((tag) => <Tag key={tag}>{tag}</Tag>)}
-          </div>
-        )}
-      </div>
-      <div>
-        <PriorityBadge priority={task.priority} />
-      </div>
-      <div>
-        {task.assignee ? (
-          <div className="flex items-center gap-1.5">
-            <Avatar initials={task.assignee.initials} color={task.assignee.color} />
-            <span className="truncate text-xs text-gray-600 dark:text-gray-400">{task.assignee.name}</span>
-          </div>
-        ) : (
-          <span className="text-xs text-gray-400">Unassigned</span>
-        )}
-      </div>
-      <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+      {/* Desktop: grid layout */}
+      <div className="hidden sm:grid sm:grid-cols-[20px_1fr_100px_140px_80px] sm:items-center sm:gap-3">
         <button
-          onClick={onEdit}
-          className="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 dark:bg-dark-border hover:text-gray-600"
-          title="Edit"
+          className="cursor-grab rounded p-0.5 text-gray-300 hover:text-gray-500 active:cursor-grabbing"
+          {...attributes}
+          {...listeners}
         >
-          <IconEdit className="h-3.5 w-3.5" />
+          <IconGrip className="h-3.5 w-3.5" />
         </button>
+        <div className="min-w-0">
+          <p className="truncate text-sm font-medium text-gray-900 dark:text-gray-100">{task.title}</p>
+          {task.description && <p className="mt-0.5 truncate text-xs text-gray-500 dark:text-gray-400">{task.description}</p>}
+          {task.tags && task.tags.length > 0 && (
+            <div className="mt-1.5 flex flex-wrap gap-1">
+              {task.tags.slice(0, 3).map((tag) => <Tag key={tag}>{tag}</Tag>)}
+            </div>
+          )}
+        </div>
+        <div>
+          <PriorityBadge priority={task.priority} />
+        </div>
+        <div>
+          {task.assignee ? (
+            <div className="flex items-center gap-1.5">
+              <Avatar initials={task.assignee.initials} color={task.assignee.color} />
+              <span className="truncate text-xs text-gray-600 dark:text-gray-400">{task.assignee.name}</span>
+            </div>
+          ) : (
+            <span className="text-xs text-gray-400">Unassigned</span>
+          )}
+        </div>
+        <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <button
+            onClick={onEdit}
+            className="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 dark:bg-dark-border hover:text-gray-600"
+            title="Edit"
+          >
+            <IconEdit className="h-3.5 w-3.5" />
+          </button>
+          <button
+            onClick={onDelete}
+            className="rounded-md p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-500"
+            title="Delete"
+          >
+            <IconTrash className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      </div>
+      {/* Mobile: stacked layout */}
+      <div className="flex items-start gap-2 sm:hidden">
         <button
-          onClick={onDelete}
-          className="rounded-md p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-500"
-          title="Delete"
+          className="mt-0.5 shrink-0 cursor-grab rounded p-0.5 text-gray-300 hover:text-gray-500 active:cursor-grabbing"
+          {...attributes}
+          {...listeners}
         >
-          <IconTrash className="h-3.5 w-3.5" />
+          <IconGrip className="h-3.5 w-3.5" />
         </button>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-2">
+            <p className="text-sm font-medium text-gray-900 dark:text-gray-100 line-clamp-2">{task.title}</p>
+            <div className="flex shrink-0 items-center gap-0.5">
+              <button onClick={onEdit} className="rounded-md p-1 text-gray-400 hover:text-gray-600"><IconEdit className="h-3.5 w-3.5" /></button>
+              <button onClick={onDelete} className="rounded-md p-1 text-gray-400 hover:text-red-500"><IconTrash className="h-3.5 w-3.5" /></button>
+            </div>
+          </div>
+          {task.description && <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400 line-clamp-1">{task.description}</p>}
+          <div className="mt-2 flex flex-wrap items-center gap-1.5">
+            <PriorityBadge priority={task.priority} />
+            {task.tags?.slice(0, 2).map((tag) => <Tag key={tag}>{tag}</Tag>)}
+            {task.assignee && (
+              <div className="flex items-center gap-1 ml-auto">
+                <Avatar initials={task.assignee.initials} color={task.assignee.color} />
+                <span className="text-2xs text-gray-500">{task.assignee.name}</span>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -1373,24 +1407,23 @@ function SortableListRow({
 
 function ListOverlayRow({ task }: { task: Task }) {
   return (
-    <div className="grid grid-cols-[20px_1fr_100px_140px_80px] items-center gap-3 rounded-xl border border-accent/30 bg-white dark:bg-dark-surface px-4 py-3 shadow-lifted ring-2 ring-accent/20">
-      <IconGrip className="h-3.5 w-3.5 text-gray-400" />
-      <div className="min-w-0">
-        <p className="truncate text-sm font-medium text-gray-900 dark:text-gray-100">{task.title}</p>
-        {task.description && <p className="mt-0.5 truncate text-xs text-gray-500 dark:text-gray-400">{task.description}</p>}
-      </div>
-      <div><PriorityBadge priority={task.priority} /></div>
-      <div>
-        {task.assignee ? (
-          <div className="flex items-center gap-1.5">
-            <Avatar initials={task.assignee.initials} color={task.assignee.color} />
-            <span className="truncate text-xs text-gray-600 dark:text-gray-400">{task.assignee.name}</span>
+    <div className="rounded-xl border border-accent/30 bg-white dark:bg-dark-surface px-4 py-3 shadow-lifted ring-2 ring-accent/20">
+      <div className="flex items-start gap-2">
+        <IconGrip className="h-3.5 w-3.5 mt-0.5 text-gray-400 shrink-0" />
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-medium text-gray-900 dark:text-gray-100">{task.title}</p>
+          {task.description && <p className="mt-0.5 truncate text-xs text-gray-500 dark:text-gray-400">{task.description}</p>}
+          <div className="mt-2 flex flex-wrap items-center gap-1.5">
+            <PriorityBadge priority={task.priority} />
+            {task.assignee && (
+              <div className="flex items-center gap-1.5">
+                <Avatar initials={task.assignee.initials} color={task.assignee.color} />
+                <span className="text-2xs text-gray-600 dark:text-gray-400">{task.assignee.name}</span>
+              </div>
+            )}
           </div>
-        ) : (
-          <span className="text-xs text-gray-400">Unassigned</span>
-        )}
+        </div>
       </div>
-      <div />
     </div>
   );
 }
@@ -1845,10 +1878,10 @@ export default function App() {
             {/* New task */}
             <button
               onClick={() => setTaskModal({ mode: "create", defaultStatus: "todo" })}
-              className="flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-xs font-medium text-white hover:bg-accent-dark transition-colors"
+              className="flex items-center gap-1.5 rounded-lg bg-accent px-2 py-1.5 sm:px-3 text-xs font-medium text-white hover:bg-accent-dark transition-colors"
             >
               <IconPlus className="h-3.5 w-3.5" />
-              New Task
+              <span className="hidden sm:inline">New Task</span>
             </button>
           </div>
         </header>
