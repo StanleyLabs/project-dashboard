@@ -290,11 +290,13 @@ type KnownAssignee = { name: string; initials: string; color: string };
 function TaskForm({
   initial,
   knownAssignees,
+  knownTags,
   onSubmit,
   onCancel,
 }: {
-  initial: { title: string; description: string; priority: TaskPriority; status: TaskStatus; tags: string; assignee: string; assigneeColor: string };
+  initial: { title: string; description: string; priority: TaskPriority; status: TaskStatus; tags: string[]; assignee: string; assigneeColor: string };
   knownAssignees: KnownAssignee[];
+  knownTags: string[];
   onSubmit: (v: { title: string; description: string; priority: TaskPriority; status: TaskStatus; tags: string[]; assignee: string; assigneeColor: string }) => void;
   onCancel: () => void;
 }) {
@@ -302,7 +304,10 @@ function TaskForm({
   const [description, setDescription] = useState(initial.description);
   const [priority, setPriority] = useState<TaskPriority>(initial.priority);
   const [status, setStatus] = useState<TaskStatus>(initial.status);
-  const [tags, setTags] = useState(initial.tags);
+  const [tags, setTags] = useState<string[]>(initial.tags);
+  const [tagInput, setTagInput] = useState("");
+  const [tagFocused, setTagFocused] = useState(false);
+  const tagRef = useRef<HTMLDivElement>(null);
   const [assignee, setAssignee] = useState(initial.assignee);
   const [assigneeColor, setAssigneeColor] = useState(initial.assigneeColor || AVATAR_COLORS[0]);
   const [assigneeFocused, setAssigneeFocused] = useState(false);
@@ -316,6 +321,36 @@ function TaskForm({
   }, [assignee, knownAssignees]);
 
   const showSuggestions = assigneeFocused && suggestions.length > 0;
+
+  // Tag suggestions
+  const tagSuggestions = useMemo(() => {
+    const available = knownTags.filter((t) => !tags.includes(t));
+    if (!tagInput.trim()) return available;
+    const q = tagInput.toLowerCase();
+    return available.filter((t) => t.toLowerCase().includes(q));
+  }, [tagInput, knownTags, tags]);
+
+  const showTagSuggestions = tagFocused && tagSuggestions.length > 0;
+
+  function addTag(tag: string) {
+    const t = tag.trim().toLowerCase();
+    if (t && !tags.includes(t)) setTags([...tags, t]);
+    setTagInput("");
+  }
+
+  function removeTag(tag: string) {
+    setTags(tags.filter((t) => t !== tag));
+  }
+
+  // Close tag dropdown on outside click
+  useEffect(() => {
+    if (!showTagSuggestions) return;
+    const handler = (e: MouseEvent) => {
+      if (tagRef.current && !tagRef.current.contains(e.target as Node)) setTagFocused(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [showTagSuggestions]);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -345,7 +380,7 @@ function TaskForm({
           description: description.trim(),
           priority,
           status,
-          tags: tags.split(",").map((x) => x.trim()).filter(Boolean),
+          tags,
           assignee: assignee.trim(),
           assigneeColor,
         });
@@ -456,15 +491,47 @@ function TaskForm({
           </div>
         )}
       </div>
-      <label className="block">
-        <span className="mb-1.5 block text-xs font-medium text-gray-700">Tags <span className="font-normal text-gray-400">(comma-separated)</span></span>
-        <input
-          value={tags}
-          onChange={(e) => setTags(e.target.value)}
-          className="block w-full rounded-lg border border-gray-200 bg-raised px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/25"
-          placeholder="frontend, design, bug"
-        />
-      </label>
+      <div ref={tagRef}>
+        <span className="mb-1.5 block text-xs font-medium text-gray-700">Tags</span>
+        <div className="flex flex-wrap items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-2 py-1.5 focus-within:border-accent focus-within:ring-2 focus-within:ring-accent/25 min-h-[38px]">
+          {tags.map((t) => (
+            <span key={t} className="inline-flex items-center gap-1 rounded-md bg-accent/8 px-2 py-0.5 text-2xs font-medium text-accent-dark">
+              {t}
+              <button type="button" onClick={() => removeTag(t)} className="text-accent-dark/50 hover:text-accent-dark">
+                <IconX className="h-2.5 w-2.5" />
+              </button>
+            </span>
+          ))}
+          <div className="relative flex-1 min-w-[80px]">
+            <input
+              value={tagInput}
+              onChange={(e) => setTagInput(e.target.value)}
+              onFocus={() => setTagFocused(true)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && tagInput.trim()) { e.preventDefault(); addTag(tagInput); }
+                if (e.key === "Backspace" && !tagInput && tags.length > 0) removeTag(tags[tags.length - 1]);
+                if (e.key === "," && tagInput.trim()) { e.preventDefault(); addTag(tagInput); }
+              }}
+              className="w-full border-none bg-transparent py-0.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none"
+              placeholder={tags.length === 0 ? "Type to add tags…" : ""}
+            />
+            {showTagSuggestions && (
+              <div className="absolute left-0 right-0 top-full z-20 mt-2 max-h-36 overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lifted animate-fade-in">
+                {tagSuggestions.slice(0, 8).map((t) => (
+                  <button
+                    key={t}
+                    type="button"
+                    className="flex w-full items-center px-3 py-1.5 text-left text-sm text-gray-700 hover:bg-canvas transition-colors"
+                    onMouseDown={(e) => { e.preventDefault(); addTag(t); }}
+                  >
+                    {t}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
       <div className="flex items-center justify-end gap-2 pt-2">
         <button
           type="button"
@@ -1447,6 +1514,18 @@ export default function App() {
   // Refresh assignees when tasks change
   useEffect(() => { refreshAssignees(); }, [tasksApi.tasks, refreshAssignees]);
 
+  // All known tags across all projects
+  const [allTags, setAllTags] = useState<string[]>([]);
+  const refreshTags = useCallback(async () => {
+    const all = await repo.listAllTasks();
+    const tagSet = new Set<string>();
+    for (const t of all) {
+      for (const tag of t.tags ?? []) tagSet.add(tag);
+    }
+    setAllTags(Array.from(tagSet).sort());
+  }, [repo]);
+  useEffect(() => { refreshTags(); }, [tasksApi.tasks, refreshTags]);
+
   // Handlers
   const handleCreateProject = useCallback(async (data: { name: string; description: string; color: string }) => {
     const p = await projectsApi.create(data);
@@ -1698,11 +1777,12 @@ export default function App() {
                 description: taskModal.task?.description ?? "",
                 priority: taskModal.task?.priority ?? "medium",
                 status: taskModal.task?.status ?? taskModal.defaultStatus ?? "todo",
-                tags: (taskModal.task?.tags ?? []).join(", "),
+                tags: taskModal.task?.tags ?? [],
                 assignee: taskModal.task?.assignee?.name ?? "",
                 assigneeColor: taskModal.task?.assignee?.color ?? "",
               }}
               knownAssignees={allAssignees}
+              knownTags={allTags}
               onSubmit={taskModal.mode === "create" ? handleCreateTask : handleUpdateTask}
               onCancel={() => setTaskModal(null)}
             />
