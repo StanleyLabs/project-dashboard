@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useTheme, type ThemeOption } from "./lib/theme";
 import {
   DndContext,
@@ -134,12 +135,16 @@ function IconMenu({ className = "w-5 h-5" }: { className?: string }) {
 function ThemeToggle() {
   const { theme, setTheme } = useTheme();
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const dropRef = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState({ top: 0, right: 0 });
 
   useEffect(() => {
     if (!open) return;
     const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      if (btnRef.current?.contains(e.target as Node)) return;
+      if (dropRef.current?.contains(e.target as Node)) return;
+      setOpen(false);
     };
     const keyHandler = (e: KeyboardEvent) => {
       if (e.key === "Escape") { e.stopPropagation(); setOpen(false); }
@@ -151,6 +156,14 @@ function ThemeToggle() {
       document.removeEventListener("keydown", keyHandler, true);
     };
   }, [open]);
+
+  function handleToggle() {
+    if (!open && btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect();
+      setPos({ top: rect.bottom + 6, right: window.innerWidth - rect.right });
+    }
+    setOpen((v) => !v);
+  }
 
   const options: { value: ThemeOption; label: string; icon: React.ReactNode }[] = [
     {
@@ -185,24 +198,29 @@ function ThemeToggle() {
   const current = options.find((o) => o.value === theme)!;
 
   return (
-    <div ref={ref} className="relative">
+    <>
       <button
-        onClick={() => setOpen((v) => !v)}
-        className="flex items-center justify-center rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-1.5 text-gray-500 dark:text-gray-400 hover:bg-canvas dark:hover:bg-dark-raised dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+        ref={btnRef}
+        onClick={handleToggle}
+        className="flex items-center justify-center rounded-lg border border-gray-200 dark:border-dark-border bg-white dark:bg-dark-raised p-1.5 text-gray-500 dark:text-gray-400 hover:bg-canvas dark:hover:bg-dark-border hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
         title={`Theme: ${current.label}`}
       >
         {current.icon}
       </button>
-      {open && (
-        <div className="absolute right-0 top-full z-[100] mt-1 w-36 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lifted animate-fade-in">
+      {open && createPortal(
+        <div
+          ref={dropRef}
+          className="fixed w-36 rounded-xl border border-gray-200 dark:border-dark-border bg-white dark:bg-dark-surface shadow-overlay animate-fade-in overflow-hidden"
+          style={{ top: pos.top, right: pos.right, zIndex: 9999 }}
+        >
           {options.map((o) => (
             <button
               key={o.value}
               className={cn(
-                "flex w-full items-center gap-2 px-3 py-2 text-xs transition-colors",
+                "flex w-full items-center gap-2.5 px-3 py-2 text-xs transition-colors",
                 o.value === theme
-                  ? "bg-accent/8 text-accent-dark dark:text-accent-light font-medium"
-                  : "text-gray-700 dark:text-gray-300 hover:bg-canvas dark:hover:bg-dark-raised dark:hover:bg-gray-700"
+                  ? "bg-accent/10 text-accent-dark dark:text-accent-light font-medium"
+                  : "text-gray-700 dark:text-gray-300 hover:bg-canvas dark:hover:bg-dark-raised"
               )}
               onClick={() => { setTheme(o.value); setOpen(false); }}
             >
@@ -210,9 +228,10 @@ function ThemeToggle() {
               {o.label}
             </button>
           ))}
-        </div>
+        </div>,
+        document.body
       )}
-    </div>
+    </>
   );
 }
 
