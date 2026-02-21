@@ -913,8 +913,13 @@ function Sidebar({
       >
         {/* Logo */}
         <div className="flex h-14 items-center gap-3 border-b border-sidebar-border px-4">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-accent to-accent-light text-sm font-bold text-white shadow-glow">
-            P
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg shadow-glow overflow-hidden">
+            <svg viewBox="0 0 1000 1000" className="h-full w-full">
+              <rect width="1000" height="1000" rx="304" fill="#171717"/>
+              <rect x="100" y="100" width="800" height="800" rx="220" fill="#0B0D10" stroke="#F2F4F7" strokeWidth="56"/>
+              <path d="M270 720V300h130c40 0 72 10 96 30s36 48 36 84c0 36-12 64-36 84s-56 30-96 30H340v192H270zm70-252h56c26 0 46-6 60-20 14-14 22-32 22-54s-8-40-22-54c-14-14-34-20-60-20H340v148z" fill="#F2F4F7"/>
+              <path d="M560 720V300h110c52 0 94 16 126 48s48 76 48 136c0 60-16 104-48 136s-74 48-126 48H560v52zm70-112h38c36 0 64-12 84-36s30-56 30-88c0-32-10-64-30-88s-48-36-84-36H630v248z" fill="#F2F4F7"/>
+            </svg>
           </div>
           <span className="text-sm font-semibold text-white">Project Dashboard</span>
           <button onClick={onToggle} className="ml-auto rounded-md p-1 text-sidebar-muted hover:text-white">
