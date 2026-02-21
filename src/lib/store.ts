@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import type { Project, Task, TaskStatus } from "./types";
 import { MOCK_PROJECTS, MOCK_TASKS } from "./mockData";
+import { loadProjects, loadTasks, saveDashboardData } from "./storage";
 
 export type TaskCreate = Omit<Task, "id" | "createdAt" | "updatedAt">;
 export type TaskUpdate = Partial<Omit<Task, "id" | "createdAt" | "projectId">>;
@@ -20,14 +21,39 @@ export type DashboardRepo = {
   reorderProjects(ids: string[]): Promise<void>;
 };
 
-let counter = 0;
-function uid(prefix: string) {
-  return `${prefix}-${++counter}-${Date.now().toString(36)}`;
+type UidFactory = (prefix: string) => string;
+
+function createUidFactory(initialCounter = 0): UidFactory {
+  let counter = initialCounter;
+  return (prefix: string) => `${prefix}-${++counter}-${Date.now().toString(36)}`;
 }
 
-export function createMockRepo(): DashboardRepo {
-  let projects = [...MOCK_PROJECTS];
-  let tasks = [...MOCK_TASKS];
+function getMaxIdCounter(projects: Project[], tasks: Task[]): number {
+  const ids = [...projects.map((p) => p.id), ...tasks.map((t) => t.id)];
+  let max = 0;
+  for (const id of ids) {
+    const m = id.match(/^[pt]-(\d+)/);
+    if (m) max = Math.max(max, parseInt(m[1], 10));
+  }
+  return max;
+}
+
+type PersistFn = (projects: Project[], tasks: Task[]) => void;
+
+type CreateRepoOptions = {
+  persist?: PersistFn;
+  uid?: UidFactory;
+};
+
+function createRepo(
+  initialProjects: Project[],
+  initialTasks: Task[],
+  options?: CreateRepoOptions
+): DashboardRepo {
+  let projects = [...initialProjects];
+  let tasks = [...initialTasks];
+  const uid = options?.uid ?? createUidFactory();
+  const save = () => options?.persist?.(projects, tasks);
 
   return {
     async listProjects() {
@@ -43,17 +69,20 @@ export function createMockRepo(): DashboardRepo {
         updatedAt: new Date().toISOString(),
       };
       projects = [...projects, p];
+      save();
       return p;
     },
     async updateProject(id, patch) {
       const idx = projects.findIndex((p) => p.id === id);
       if (idx === -1) throw new Error("Project not found");
       projects[idx] = { ...projects[idx], ...patch, updatedAt: new Date().toISOString() };
+      save();
       return projects[idx];
     },
     async deleteProject(id) {
       projects = projects.filter((p) => p.id !== id);
       tasks = tasks.filter((t) => t.projectId !== id);
+      save();
     },
     async listAllTasks() {
       return [...tasks];
@@ -71,16 +100,19 @@ export function createMockRepo(): DashboardRepo {
         updatedAt: new Date().toISOString(),
       };
       tasks = [t, ...tasks];
+      save();
       return t;
     },
     async updateTask(id, patch) {
       const idx = tasks.findIndex((t) => t.id === id);
       if (idx === -1) throw new Error("Task not found");
       tasks[idx] = { ...tasks[idx], ...patch, updatedAt: new Date().toISOString() };
+      save();
       return tasks[idx];
     },
     async deleteTask(id) {
       tasks = tasks.filter((t) => t.id !== id);
+      save();
     },
     async reorderTask(id, newStatus, newOrder) {
       const idx = tasks.findIndex((t) => t.id === id);
@@ -110,6 +142,7 @@ export function createMockRepo(): DashboardRepo {
         });
       }
 
+      save();
       return tasks[idx];
     },
     async reorderProjects(ids) {
@@ -118,12 +151,31 @@ export function createMockRepo(): DashboardRepo {
         const p = map.get(id)!;
         return { ...p, order: i };
       });
+      save();
     },
   };
 }
 
-export function useDashboardRepo() {
-  return useMemo(() => createMockRepo(), []);
+export function createMockRepo(): DashboardRepo {
+  return createRepo(MOCK_PROJECTS, MOCK_TASKS);
+}
+
+function createLocalStorageRepo(): DashboardRepo {
+  const projects = loadProjects();
+  const projectIds = new Set(projects.map((p) => p.id));
+  const tasks = loadTasks(projectIds);
+  const uid = createUidFactory(getMaxIdCounter(projects, tasks));
+  return createRepo(projects, tasks, {
+    uid,
+    persist: saveDashboardData,
+  });
+}
+
+export function useDashboardRepo(useMockData = false) {
+  return useMemo(
+    () => (useMockData ? createMockRepo() : createLocalStorageRepo()),
+    [useMockData]
+  );
 }
 
 export function useProjects(repo: DashboardRepo) {

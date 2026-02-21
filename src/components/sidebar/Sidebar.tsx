@@ -7,6 +7,7 @@ import {
 } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { Link } from "react-router-dom";
 import type { Project } from "../../lib/types";
 import { IconPlus, IconX } from "../icons";
 import { SortableProjectItem } from "./SortableProjectItem";
@@ -23,6 +24,7 @@ export function Sidebar({
   onReorder,
   collapsed,
   onToggle,
+  useMockData,
 }: {
   projects: Project[];
   activeId: string | null;
@@ -33,6 +35,7 @@ export function Sidebar({
   onReorder: (ids: string[]) => void;
   collapsed: boolean;
   onToggle: () => void;
+  useMockData: boolean;
 }) {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
@@ -110,7 +113,27 @@ export function Sidebar({
           </DndContext>
         </div>
 
-        <div className="border-t border-sidebar-border px-4 py-3">
+        {(useMockData || projects.length === 0) && (
+          <div className="shrink-0 px-4 pb-3">
+            {useMockData ? (
+              <Link
+                to="/"
+                className="block w-full rounded-lg border border-sidebar-border bg-sidebar-hover/50 px-3 py-2 text-center text-xs font-medium text-white hover:bg-sidebar-hover transition-colors"
+              >
+                Exit demo
+              </Link>
+            ) : (
+              <Link
+                to="/demo"
+                className="block w-full rounded-lg border border-sidebar-border bg-sidebar-hover/50 px-3 py-2 text-center text-xs font-medium text-white hover:bg-sidebar-hover transition-colors"
+              >
+                View demo with sample data
+              </Link>
+            )}
+          </div>
+        )}
+
+        <div className="border-t border-sidebar-border px-4 py-3 shrink-0">
           <div className="text-2xs text-sidebar-muted">Built by Stanley Labs</div>
         </div>
       </aside>

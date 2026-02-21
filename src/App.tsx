@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useLocation } from "react-router-dom";
 import type { Project, Task, TaskPriority, TaskStatus, ViewMode } from "./lib/types";
 import { PROJECT_COLORS } from "./lib/types";
 import { useDashboardRepo, useProjects, useTasks } from "./lib/store";
@@ -23,7 +24,9 @@ import {
 import type { KnownAssignee } from "./components";
 
 export default function App() {
-  const repo = useDashboardRepo();
+  const { pathname } = useLocation();
+  const useMockData = pathname === "/demo";
+  const repo = useDashboardRepo(useMockData);
   const projectsApi = useProjects(repo);
   const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
   const tasksApi = useTasks(repo, activeProjectId);
@@ -47,7 +50,8 @@ export default function App() {
 
   useEffect(() => {
     projectsApi.refresh();
-  }, []);
+    setActiveProjectId(null);
+  }, [pathname]);
 
   useEffect(() => {
     if (!projectsApi.projects?.length || activeProjectId) return;
@@ -207,6 +211,7 @@ export default function App() {
         onReorder={(ids) => projectsApi.reorder(ids)}
         collapsed={!sidebarOpen}
         onToggle={() => setSidebarOpen((v) => !v)}
+        useMockData={useMockData}
       />
 
       <div className="flex flex-1 flex-col overflow-hidden">
@@ -224,9 +229,7 @@ export default function App() {
               <span className="flex h-6 w-6 items-center justify-center rounded" style={{ backgroundColor: activeProject.color + "20", color: activeProject.color }}>
                 <IconFolder className="h-3.5 w-3.5" />
               </span>
-              <div>
-                <h1 className="text-sm font-semibold text-gray-900 dark:text-gray-100">{activeProject.name}</h1>
-              </div>
+              <h1 className="text-sm font-semibold text-gray-900 dark:text-gray-100">{activeProject.name}</h1>
             </div>
           )}
 
