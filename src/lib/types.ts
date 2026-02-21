@@ -42,11 +42,11 @@ export const STATUS_COLUMNS: { key: TaskStatus; label: string; icon: string }[] 
   { key: "done", label: "Done", icon: "●" },
 ];
 
-export const PRIORITY_CONFIG: Record<TaskPriority, { label: string; color: string; bg: string }> = {
-  urgent: { label: "Urgent", color: "text-red-700", bg: "bg-red-50 border-red-200" },
-  high: { label: "High", color: "text-orange-700", bg: "bg-orange-50 border-orange-200" },
-  medium: { label: "Medium", color: "text-yellow-700", bg: "bg-yellow-50 border-yellow-200" },
-  low: { label: "Low", color: "text-gray-500", bg: "bg-gray-50 border-gray-200" },
+export const PRIORITY_CONFIG: Record<TaskPriority, { label: string; color: string; bg: string; dot: string }> = {
+  urgent: { label: "Urgent", color: "text-red-700", bg: "bg-red-50 border-red-200", dot: "#ff6b6b" },
+  high: { label: "High", color: "text-orange-700", bg: "bg-orange-50 border-orange-200", dot: "#f4a261" },
+  medium: { label: "Medium", color: "text-yellow-700", bg: "bg-yellow-50 border-yellow-200", dot: "#ffd166" },
+  low: { label: "Low", color: "text-gray-500", bg: "bg-gray-50 border-gray-200", dot: "#8888a4" },
 };
 
 export const PROJECT_COLORS = [

@@ -135,11 +135,13 @@ function CustomSelect<T extends string>({
   onChange,
   options,
   placeholder,
+  renderOption,
 }: {
   value: T;
   onChange: (v: T) => void;
   options: { value: T; label: string }[];
   placeholder?: string;
+  renderOption?: (opt: { value: T; label: string }, isSelected: boolean) => React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -172,7 +174,7 @@ function CustomSelect<T extends string>({
         )}
       >
         <span className={selected ? "text-gray-900" : "text-gray-400"}>
-          {selected?.label ?? placeholder ?? "Select…"}
+          {selected && renderOption ? renderOption(selected, true) : (selected?.label ?? placeholder ?? "Select…")}
         </span>
         <svg className={cn("h-3.5 w-3.5 text-gray-400 transition-transform", open && "rotate-180")} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
           <path strokeLinecap="round" strokeLinejoin="round" d="m6 9 6 6 6-6" />
@@ -187,12 +189,12 @@ function CustomSelect<T extends string>({
               className={cn(
                 "flex w-full items-center px-3 py-2 text-left text-sm transition-colors",
                 o.value === value
-                  ? "bg-accent/8 text-accent-dark font-medium"
-                  : "text-gray-700 hover:bg-canvas"
+                  ? "bg-accent/8 font-medium"
+                  : "hover:bg-canvas"
               )}
               onClick={() => { onChange(o.value); setOpen(false); }}
             >
-              {o.label}
+              {renderOption ? renderOption(o, o.value === value) : o.label}
             </button>
           ))}
         </div>
@@ -430,6 +432,15 @@ function TaskForm({
             value={status}
             onChange={setStatus}
             options={STATUS_COLUMNS.map((c) => ({ value: c.key, label: c.label }))}
+            renderOption={(opt) => {
+              const col = STATUS_COLUMNS.find((c) => c.key === opt.value);
+              return (
+                <span className="flex items-center gap-2">
+                  <span className="text-xs">{col?.icon}</span>
+                  <span>{opt.label}</span>
+                </span>
+              );
+            }}
           />
         </div>
         <div className="block">
@@ -443,6 +454,15 @@ function TaskForm({
               { value: "medium" as TaskPriority, label: "Medium" },
               { value: "low" as TaskPriority, label: "Low" },
             ]}
+            renderOption={(opt) => {
+              const cfg = PRIORITY_CONFIG[opt.value as TaskPriority];
+              return (
+                <span className="flex items-center gap-2">
+                  <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: cfg.dot }} />
+                  <span>{opt.label}</span>
+                </span>
+              );
+            }}
           />
         </div>
       </div>
