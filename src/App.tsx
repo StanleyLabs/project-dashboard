@@ -491,22 +491,26 @@ function TaskForm({
           </div>
         )}
       </div>
-      <div ref={tagRef}>
+      <div ref={tagRef} className="relative">
         <span className="mb-1.5 block text-xs font-medium text-gray-700">Tags</span>
-        <div className="flex flex-wrap items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-2 py-1.5 focus-within:border-accent focus-within:ring-2 focus-within:ring-accent/25 min-h-[38px]">
+        <div
+          className="flex flex-wrap items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-2 py-1.5 focus-within:border-accent focus-within:ring-2 focus-within:ring-accent/25 min-h-[38px] cursor-text"
+          onClick={() => { tagRef.current?.querySelector("input")?.focus(); setTagFocused(true); }}
+        >
           {tags.map((t) => (
             <span key={t} className="inline-flex items-center gap-1 rounded-md bg-accent/8 px-2 py-0.5 text-2xs font-medium text-accent-dark">
               {t}
-              <button type="button" onClick={() => removeTag(t)} className="text-accent-dark/50 hover:text-accent-dark">
+              <button type="button" onClick={(e) => { e.stopPropagation(); removeTag(t); }} className="text-accent-dark/50 hover:text-accent-dark">
                 <IconX className="h-2.5 w-2.5" />
               </button>
             </span>
           ))}
-          <div className="relative flex-1 min-w-[80px]">
+          <div className="flex-1 min-w-[80px]">
             <input
               value={tagInput}
               onChange={(e) => setTagInput(e.target.value)}
               onFocus={() => setTagFocused(true)}
+              onClick={() => setTagFocused(true)}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && tagInput.trim()) { e.preventDefault(); addTag(tagInput); }
                 if (e.key === "Backspace" && !tagInput && tags.length > 0) removeTag(tags[tags.length - 1]);
@@ -515,22 +519,22 @@ function TaskForm({
               className="w-full border-none bg-transparent py-0.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none"
               placeholder={tags.length === 0 ? "Type to add tags…" : ""}
             />
-            {showTagSuggestions && (
-              <div className="absolute left-0 right-0 top-full z-20 mt-2 max-h-36 overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lifted animate-fade-in">
-                {tagSuggestions.slice(0, 8).map((t) => (
-                  <button
-                    key={t}
-                    type="button"
-                    className="flex w-full items-center px-3 py-1.5 text-left text-sm text-gray-700 hover:bg-canvas transition-colors"
-                    onMouseDown={(e) => { e.preventDefault(); addTag(t); }}
-                  >
-                    {t}
-                  </button>
-                ))}
-              </div>
-            )}
           </div>
         </div>
+        {showTagSuggestions && (
+          <div className="absolute left-0 right-0 top-full z-20 mt-1 max-h-36 overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lifted animate-fade-in">
+            {tagSuggestions.slice(0, 8).map((t) => (
+              <button
+                key={t}
+                type="button"
+                className="flex w-full items-center px-3 py-1.5 text-left text-sm text-gray-700 hover:bg-canvas transition-colors"
+                onMouseDown={(e) => { e.preventDefault(); addTag(t); }}
+              >
+                {t}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
       <div className="flex items-center justify-end gap-2 pt-2">
         <button
