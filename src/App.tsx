@@ -1409,7 +1409,7 @@ function SortableListRow({
 
 function ListOverlayRow({ task }: { task: Task }) {
   return (
-    <div className="border-b border-gray-100 dark:border-dark-border bg-white dark:bg-dark-surface px-4 py-3 shadow-lifted">
+    <div className="rounded-xl border border-accent/30 bg-white dark:bg-dark-surface px-4 py-3 shadow-lifted ring-2 ring-accent/20">
       {/* Desktop */}
       <div className="hidden sm:grid sm:grid-cols-[20px_1fr_100px_140px_80px] sm:items-center sm:gap-3">
         <IconGrip className="h-3.5 w-3.5 text-gray-400" />
