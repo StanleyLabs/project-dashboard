@@ -147,11 +147,18 @@ function CustomSelect<T extends string>({
 
   useEffect(() => {
     if (!open) return;
-    const handler = (e: MouseEvent) => {
+    const handleClick = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
     };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") { e.stopPropagation(); setOpen(false); }
+    };
+    document.addEventListener("mousedown", handleClick);
+    document.addEventListener("keydown", handleKey, true);
+    return () => {
+      document.removeEventListener("mousedown", handleClick);
+      document.removeEventListener("keydown", handleKey, true);
+    };
   }, [open]);
 
   return (
@@ -452,6 +459,9 @@ function TaskForm({
                 setAssignee(e.target.value);
               }}
               onFocus={() => setAssigneeFocused(true)}
+              onKeyDown={(e) => {
+                if (e.key === "Escape" && assigneeFocused) { e.stopPropagation(); setAssigneeFocused(false); (e.target as HTMLElement).blur(); }
+              }}
               className="block w-full rounded-lg border border-gray-200 bg-raised px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/25"
               placeholder="Type a name…"
             />
@@ -521,6 +531,7 @@ function TaskForm({
               onFocus={() => setTagFocused(true)}
               onClick={() => setTagFocused(true)}
               onKeyDown={(e) => {
+                if (e.key === "Escape") { e.stopPropagation(); setTagFocused(false); (e.target as HTMLElement).blur(); return; }
                 if (e.key === "Enter" && tagInput.trim()) { e.preventDefault(); addTag(tagInput); }
                 if (e.key === "Backspace" && !tagInput && tags.length > 0) removeTag(tags[tags.length - 1]);
                 if (e.key === "," && tagInput.trim()) { e.preventDefault(); addTag(tagInput); }
