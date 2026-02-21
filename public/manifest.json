@@ -1,0 +1,23 @@
+{
+  "name": "Project Dashboard",
+  "short_name": "Project Dashboard",
+  "description": "Project Dashboard by Stanley Labs",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#171717",
+  "theme_color": "#171717",
+  "icons": [
+    {
+      "src": "/pd-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/pd-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}
