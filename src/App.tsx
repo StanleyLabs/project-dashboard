@@ -8,7 +8,8 @@ import {
   useDroppable,
   useSensor,
   useSensors,
-  closestCorners,
+  pointerWithin,
+  rectIntersection,
   type DragStartEvent,
   type DragEndEvent,
   type DragOverEvent,
@@ -32,6 +33,12 @@ function cn(...classes: (string | false | null | undefined)[]) {
 
 function stopProp(e: React.MouseEvent) {
   e.stopPropagation();
+}
+
+function collisionDetection(args: Parameters<typeof pointerWithin>[0]) {
+  const pointerCollisions = pointerWithin(args);
+  if (pointerCollisions.length > 0) return pointerCollisions;
+  return rectIntersection(args);
 }
 
 const AVATAR_COLORS = ["#6c5ce7", "#e84393", "#00b894", "#fdcb6e", "#e17055", "#0984e3", "#6c5ce7", "#00cec9", "#d63031", "#a29bfe"];
@@ -877,7 +884,12 @@ function Sidebar({
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
   );
 
+  function handleDragStart() {
+    document.body.classList.add("is-dragging");
+  }
+
   function handleDragEnd(event: DragEndEvent) {
+    document.body.classList.remove("is-dragging");
     const { active, over } = event;
     if (!over || active.id === over.id) return;
     const oldIndex = projects.findIndex((p) => p.id === active.id);
@@ -922,7 +934,7 @@ function Sidebar({
               <IconPlus className="h-3.5 w-3.5" />
             </button>
           </div>
-          <DndContext sensors={sensors} collisionDetection={closestCorners} onDragEnd={handleDragEnd}>
+          <DndContext sensors={sensors} collisionDetection={collisionDetection} onDragStart={handleDragStart} onDragEnd={handleDragEnd} onDragCancel={() => document.body.classList.remove("is-dragging")}>
             <SortableContext items={projects.map((p) => p.id)} strategy={verticalListSortingStrategy}>
               <div className="space-y-0.5">
                 {projects.map((p) => (
@@ -978,7 +990,7 @@ function SortableTaskCard({
   };
 
   return (
-    <div ref={setNodeRef} style={style} className={isActive ? "" : "animate-fade-in"} data-task-id={task.id}>
+    <div ref={setNodeRef} style={style} data-task-id={task.id}>
       <TaskCardInner task={task} onEdit={onEdit} onDelete={onDelete} dragProps={{ ...attributes, ...listeners }} />
     </div>
   );
@@ -1063,16 +1075,16 @@ function KanbanColumn({
   onEditTask: (t: Task) => void;
   onDeleteTask: (t: Task) => void;
 }) {
-  const { setNodeRef, isOver } = useDroppable({
+  const { setNodeRef } = useDroppable({
     id: `column-${status}`,
     data: { type: "column", status },
   });
 
   return (
-    <div className={cn(
-      "flex min-w-0 flex-1 flex-col rounded-2xl border transition-colors duration-150",
-      isOver ? "bg-accent/5 border-accent/30" : "bg-raised dark:bg-dark-raised border-gray-200 dark:border-dark-border"
-    )}>
+    <div
+      ref={setNodeRef}
+      className="flex min-w-0 flex-1 flex-col rounded-2xl border border-gray-200 dark:border-dark-border bg-raised dark:bg-dark-raised"
+    >
       <div className="flex items-center justify-between px-3.5 py-3">
         <div className="flex items-center gap-2">
           <span className="text-xs">{icon}</span>
@@ -1089,7 +1101,7 @@ function KanbanColumn({
           <IconPlus className="h-3.5 w-3.5" />
         </button>
       </div>
-      <div ref={setNodeRef} className="flex-1 space-y-2 px-2 pb-2 min-h-[60px]">
+      <div className="flex-1 space-y-2 px-2 pt-3 pb-2 min-h-[60px]">
         <SortableContext items={tasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
           {tasks.map((t) => (
             <SortableTaskCard
@@ -1141,6 +1153,7 @@ function KanbanBoard({
 
   // Live preview state — mirrors baseByStatus but updates during drag
   const [liveColumns, setLiveColumns] = useState(baseByStatus);
+  const lastOverIdRef = useRef<string | null>(null);
 
   // Sync live state when tasks change from outside (create/delete/edit)
   useEffect(() => {
@@ -1151,18 +1164,17 @@ function KanbanBoard({
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
   );
 
-  // Find which column an item id lives in within live state
-  function findColumn(id: string): TaskStatus | null {
-    if (typeof id === "string" && id.startsWith("column-")) {
+  function findColumn(cols: Record<TaskStatus, Task[]>, id: string): TaskStatus | null {
+    if (typeof id === "string" && id.startsWith("column-"))
       return id.replace("column-", "") as TaskStatus;
-    }
-    for (const [status, items] of Object.entries(liveColumns)) {
+    for (const [status, items] of Object.entries(cols))
       if (items.some((t) => t.id === id)) return status as TaskStatus;
-    }
     return null;
   }
 
   function handleDragStart(event: DragStartEvent) {
+    document.body.classList.add("is-dragging");
+    lastOverIdRef.current = null;
     const task = tasks.find((t) => t.id === event.active.id);
     setActiveTask(task ?? null);
     const el = document.querySelector(`[data-task-id="${event.active.id}"]`);
@@ -1171,57 +1183,46 @@ function KanbanBoard({
 
   function handleDragOver(event: DragOverEvent) {
     const { active, over } = event;
-    if (!over) return;
-
+    if (!over) {
+      lastOverIdRef.current = null;
+      return;
+    }
     const activeId = active.id as string;
     const overId = over.id as string;
+    if (overId === lastOverIdRef.current) return;
+    lastOverIdRef.current = overId;
 
-    const activeCol = findColumn(activeId);
-    const overCol = findColumn(overId);
-    if (!activeCol || !overCol) return;
+    setLiveColumns((prev) => {
+      const activeCol = findColumn(prev, activeId);
+      const overCol = findColumn(prev, overId);
+      if (!activeCol || !overCol) return prev;
 
-    // Moving between columns
-    if (activeCol !== overCol) {
-      setLiveColumns((prev) => {
-        const sourceItems = [...prev[activeCol]];
-        const destItems = [...prev[overCol]];
-        const activeIndex = sourceItems.findIndex((t) => t.id === activeId);
-        if (activeIndex === -1) return prev;
-
-        const [movedItem] = sourceItems.splice(activeIndex, 1);
-
-        // Find insert index
-        let insertIndex = destItems.length;
+      if (activeCol !== overCol) {
+        const src = [...prev[activeCol]];
+        const dst = [...prev[overCol]];
+        const ai = src.findIndex((t) => t.id === activeId);
+        if (ai === -1) return prev;
+        const [movedItem] = src.splice(ai, 1);
+        let ins = dst.length;
         if (!overId.startsWith("column-")) {
-          const overIndex = destItems.findIndex((t) => t.id === overId);
-          if (overIndex !== -1) insertIndex = overIndex;
+          const oi = dst.findIndex((t) => t.id === overId);
+          if (oi !== -1) ins = oi;
         }
-
-        destItems.splice(insertIndex, 0, { ...movedItem, status: overCol });
-
-        return {
-          ...prev,
-          [activeCol]: sourceItems,
-          [overCol]: destItems,
-        };
-      });
-    } else {
-      // Reordering within same column
-      setLiveColumns((prev) => {
+        dst.splice(ins, 0, { ...movedItem, status: overCol });
+        return { ...prev, [activeCol]: src, [overCol]: dst };
+      } else {
         const items = [...prev[activeCol]];
-        const activeIndex = items.findIndex((t) => t.id === activeId);
-        const overIndex = items.findIndex((t) => t.id === overId);
-        if (activeIndex === -1 || overIndex === -1 || activeIndex === overIndex) return prev;
-
-        return {
-          ...prev,
-          [activeCol]: arrayMove(items, activeIndex, overIndex),
-        };
-      });
-    }
+        const ai = items.findIndex((t) => t.id === activeId);
+        const oi = items.findIndex((t) => t.id === overId);
+        if (ai === -1 || oi === -1 || ai === oi) return prev;
+        return { ...prev, [activeCol]: arrayMove(items, ai, oi) };
+      }
+    });
   }
 
   function handleDragEnd(event: DragEndEvent) {
+    document.body.classList.remove("is-dragging");
+    lastOverIdRef.current = null;
     const { active, over } = event;
     setActiveTask(null);
 
@@ -1252,6 +1253,8 @@ function KanbanBoard({
   }
 
   function handleDragCancel() {
+    document.body.classList.remove("is-dragging");
+    lastOverIdRef.current = null;
     setActiveTask(null);
     setLiveColumns(baseByStatus);
   }
@@ -1259,7 +1262,7 @@ function KanbanBoard({
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={closestCorners}
+      collisionDetection={collisionDetection}
       onDragStart={handleDragStart}
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
@@ -1409,16 +1412,16 @@ function ListStatusGroup({
   onEditTask: (t: Task) => void;
   onDeleteTask: (t: Task) => void;
 }) {
-  const { setNodeRef, isOver } = useDroppable({
+  const { setNodeRef } = useDroppable({
     id: `list-group-${status}`,
     data: { type: "list-group", status },
   });
 
   return (
-    <div className={cn(
-      "overflow-hidden rounded-2xl border bg-white dark:bg-dark-surface transition-colors duration-150",
-      isOver ? "border-accent/30 bg-accent/5" : "border-gray-200 dark:border-dark-border"
-    )}>
+    <div
+      ref={setNodeRef}
+      className="overflow-hidden rounded-2xl border border-gray-200 dark:border-dark-border bg-white dark:bg-dark-surface"
+    >
       <div className="flex items-center gap-2 border-b border-gray-100 dark:border-dark-border bg-raised dark:bg-dark-raised px-4 py-2.5">
         <span className="text-xs">{icon}</span>
         <span className="text-xs font-semibold text-gray-800 dark:text-gray-100">{label}</span>
@@ -1426,7 +1429,7 @@ function ListStatusGroup({
           {tasks.length}
         </span>
       </div>
-      <div ref={setNodeRef} className="min-h-[48px]">
+      <div className="min-h-[48px] pt-3">
         <SortableContext items={tasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
           {tasks.map((t) => (
             <SortableListRow
@@ -1472,65 +1475,72 @@ function ListView({
   }, [tasks]);
 
   const [liveColumns, setLiveColumns] = useState(baseByStatus);
+  const lastOverIdRef = useRef<string | null>(null);
   useEffect(() => { setLiveColumns(baseByStatus); }, [baseByStatus]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
   );
 
-  function findColumn(id: string): TaskStatus | null {
-    if (typeof id === "string" && id.startsWith("list-group-")) {
+  function findColumn(cols: Record<TaskStatus, Task[]>, id: string): TaskStatus | null {
+    if (typeof id === "string" && id.startsWith("list-group-"))
       return id.replace("list-group-", "") as TaskStatus;
-    }
-    for (const [status, items] of Object.entries(liveColumns)) {
+    for (const [status, items] of Object.entries(cols))
       if (items.some((t) => t.id === id)) return status as TaskStatus;
-    }
     return null;
   }
 
+  function handleDragOver(event: DragOverEvent) {
+    const { active, over } = event;
+    if (!over) {
+      lastOverIdRef.current = null;
+      return;
+    }
+    const activeId = active.id as string;
+    const overId = over.id as string;
+    if (overId === lastOverIdRef.current) return;
+    lastOverIdRef.current = overId;
+
+    setLiveColumns((prev) => {
+      const activeCol = findColumn(prev, activeId);
+      const overCol = findColumn(prev, overId);
+      if (!activeCol || !overCol) return prev;
+
+      if (activeCol !== overCol) {
+        const src = [...prev[activeCol]];
+        const dst = [...prev[overCol]];
+        const ai = src.findIndex((t) => t.id === activeId);
+        if (ai === -1) return prev;
+        const [moved] = src.splice(ai, 1);
+        let ins = dst.length;
+        if (!overId.startsWith("list-group-")) {
+          const oi = dst.findIndex((t) => t.id === overId);
+          if (oi !== -1) ins = oi;
+        }
+        dst.splice(ins, 0, { ...moved, status: overCol });
+        return { ...prev, [activeCol]: src, [overCol]: dst };
+      } else {
+        const items = [...prev[activeCol]];
+        const ai = items.findIndex((t) => t.id === activeId);
+        const oi = items.findIndex((t) => t.id === overId);
+        if (ai === -1 || oi === -1 || ai === oi) return prev;
+        return { ...prev, [activeCol]: arrayMove(items, ai, oi) };
+      }
+    });
+  }
+
   function handleDragStart(event: DragStartEvent) {
+    document.body.classList.add("is-dragging");
+    lastOverIdRef.current = null;
     const task = tasks.find((t) => t.id === event.active.id);
     setActiveTask(task ?? null);
     const el = document.querySelector(`[data-task-id="${event.active.id}"]`);
     setActiveWidth(el instanceof HTMLElement ? el.getBoundingClientRect().width : null);
   }
 
-  function handleDragOver(event: DragOverEvent) {
-    const { active, over } = event;
-    if (!over) return;
-    const activeId = active.id as string;
-    const overId = over.id as string;
-    const activeCol = findColumn(activeId);
-    const overCol = findColumn(overId);
-    if (!activeCol || !overCol) return;
-
-    if (activeCol !== overCol) {
-      setLiveColumns((prev) => {
-        const src = [...prev[activeCol]];
-        const dst = [...prev[overCol]];
-        const ai = src.findIndex((t) => t.id === activeId);
-        if (ai === -1) return prev;
-        const [moved] = src.splice(ai, 1);
-        let insertAt = dst.length;
-        if (!overId.startsWith("list-group-")) {
-          const oi = dst.findIndex((t) => t.id === overId);
-          if (oi !== -1) insertAt = oi;
-        }
-        dst.splice(insertAt, 0, { ...moved, status: overCol });
-        return { ...prev, [activeCol]: src, [overCol]: dst };
-      });
-    } else {
-      setLiveColumns((prev) => {
-        const items = [...prev[activeCol]];
-        const ai = items.findIndex((t) => t.id === activeId);
-        const oi = items.findIndex((t) => t.id === overId);
-        if (ai === -1 || oi === -1 || ai === oi) return prev;
-        return { ...prev, [activeCol]: arrayMove(items, ai, oi) };
-      });
-    }
-  }
-
   function handleDragEnd(event: DragEndEvent) {
+    document.body.classList.remove("is-dragging");
+    lastOverIdRef.current = null;
     const { active, over } = event;
     setActiveTask(null);
     if (!over) { setLiveColumns(baseByStatus); return; }
@@ -1542,6 +1552,8 @@ function ListView({
   }
 
   function handleDragCancel() {
+    document.body.classList.remove("is-dragging");
+    lastOverIdRef.current = null;
     setActiveTask(null);
     setLiveColumns(baseByStatus);
   }
@@ -1559,7 +1571,7 @@ function ListView({
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={closestCorners}
+      collisionDetection={collisionDetection}
       onDragStart={handleDragStart}
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
@@ -1599,7 +1611,9 @@ export default function App() {
   const tasksApi = useTasks(repo, activeProjectId);
 
   const [view, setView] = useState<ViewMode>("kanban");
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(() =>
+    typeof window !== "undefined" && window.innerWidth >= 1024
+  );
   const [search, setSearch] = useState("");
 
   // Project modal

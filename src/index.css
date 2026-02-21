@@ -39,6 +39,16 @@ html.dark body {
   background: #aaa;
 }
 
+/* Dark mode scrollbar - darker colors */
+.dark ::-webkit-scrollbar-thumb,
+html.dark ::-webkit-scrollbar-thumb {
+  background: #2d2d3d;
+}
+.dark ::-webkit-scrollbar-thumb:hover,
+html.dark ::-webkit-scrollbar-thumb:hover {
+  background: #3d3d4d;
+}
+
 /* Dark scrollbar inside sidebar */
 /* Custom select styling */
 .select-styled {
@@ -55,4 +65,16 @@ html.dark body {
 }
 .dark-scroll::-webkit-scrollbar-thumb:hover {
   background: #4a4a6a;
+}
+
+/* Keep grab cursor during any drag operation */
+body.is-dragging,
+body.is-dragging * {
+  cursor: grabbing !important;
+}
+
+/* Smoother sortable animations: GPU layer + reduce subpixel jitter */
+body.is-dragging [data-task-id] {
+  will-change: transform;
+  backface-visibility: hidden;
 }
