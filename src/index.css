@@ -15,6 +15,11 @@ body {
   background: #f0f0f5;
 }
 
+.dark body,
+html.dark body {
+  background: #0f0f17;
+}
+
 ::selection {
   background: rgba(108, 92, 231, 0.25);
 }

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useTheme, type ThemeOption } from "./lib/theme";
 import {
   DndContext,
   DragOverlay,
@@ -128,6 +129,93 @@ function IconMenu({ className = "w-5 h-5" }: { className?: string }) {
   );
 }
 
+/* ─── Theme Toggle ─── */
+
+function ThemeToggle() {
+  const { theme, setTheme } = useTheme();
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    const keyHandler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") { e.stopPropagation(); setOpen(false); }
+    };
+    document.addEventListener("mousedown", handler);
+    document.addEventListener("keydown", keyHandler, true);
+    return () => {
+      document.removeEventListener("mousedown", handler);
+      document.removeEventListener("keydown", keyHandler, true);
+    };
+  }, [open]);
+
+  const options: { value: ThemeOption; label: string; icon: React.ReactNode }[] = [
+    {
+      value: "light",
+      label: "Light",
+      icon: (
+        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
+        </svg>
+      ),
+    },
+    {
+      value: "dark",
+      label: "Dark",
+      icon: (
+        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" />
+        </svg>
+      ),
+    },
+    {
+      value: "system",
+      label: "System",
+      icon: (
+        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9 17.25v1.007a3 3 0 01-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0115 18.257V17.25m6-12V15a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 15V5.25m18 0A2.25 2.25 0 0018.75 3H5.25A2.25 2.25 0 003 5.25m18 0V12a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 12V5.25" />
+        </svg>
+      ),
+    },
+  ];
+
+  const current = options.find((o) => o.value === theme)!;
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="flex items-center justify-center rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-1.5 text-gray-500 dark:text-gray-400 hover:bg-canvas dark:hover:bg-dark-raised dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+        title={`Theme: ${current.label}`}
+      >
+        {current.icon}
+      </button>
+      {open && (
+        <div className="absolute right-0 top-full z-20 mt-1 w-36 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lifted animate-fade-in">
+          {options.map((o) => (
+            <button
+              key={o.value}
+              className={cn(
+                "flex w-full items-center gap-2 px-3 py-2 text-xs transition-colors",
+                o.value === theme
+                  ? "bg-accent/8 text-accent-dark dark:text-accent-light font-medium"
+                  : "text-gray-700 dark:text-gray-300 hover:bg-canvas dark:hover:bg-dark-raised dark:hover:bg-gray-700"
+              )}
+              onClick={() => { setTheme(o.value); setOpen(false); }}
+            >
+              {o.icon}
+              {o.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ─── Custom Select ─── */
 
 function CustomSelect<T extends string>({
@@ -169,11 +257,11 @@ function CustomSelect<T extends string>({
         type="button"
         onClick={() => setOpen((v) => !v)}
         className={cn(
-          "flex w-full items-center justify-between rounded-lg border bg-white px-3 py-2 text-left text-sm transition-colors",
-          open ? "border-accent ring-2 ring-accent/25" : "border-gray-200 hover:border-gray-300"
+          "flex w-full items-center justify-between rounded-lg border bg-white dark:bg-dark-raised px-3 py-2 text-left text-sm transition-colors",
+          open ? "border-accent ring-2 ring-accent/25" : "border-gray-200 dark:border-dark-border hover:border-gray-300 dark:hover:border-gray-600"
         )}
       >
-        <span className={selected ? "text-gray-900" : "text-gray-400"}>
+        <span className={selected ? "text-gray-900 dark:text-gray-100" : "text-gray-400"}>
           {selected && renderOption ? renderOption(selected, true) : (selected?.label ?? placeholder ?? "Select…")}
         </span>
         <svg className={cn("h-3.5 w-3.5 text-gray-400 transition-transform", open && "rotate-180")} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -181,7 +269,7 @@ function CustomSelect<T extends string>({
         </svg>
       </button>
       {open && (
-        <div className="absolute left-0 right-0 top-full z-20 mt-1 max-h-48 overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lifted animate-fade-in">
+        <div className="absolute left-0 right-0 top-full z-20 mt-1 max-h-48 overflow-y-auto rounded-lg border border-gray-200 dark:border-dark-border bg-white dark:bg-dark-surface shadow-lifted animate-fade-in">
           {options.map((o) => (
             <button
               key={o.value}
@@ -190,7 +278,7 @@ function CustomSelect<T extends string>({
                 "flex w-full items-center px-3 py-2 text-left text-sm transition-colors",
                 o.value === value
                   ? "bg-accent/8 font-medium"
-                  : "hover:bg-canvas"
+                  : "hover:bg-canvas dark:hover:bg-dark-raised"
               )}
               onClick={() => { onChange(o.value); setOpen(false); }}
             >
@@ -210,7 +298,7 @@ function PriorityBadge({ priority }: { priority: TaskPriority }) {
     urgent: "bg-pri-urgent/10 text-pri-urgent border-pri-urgent/20",
     high: "bg-pri-high/10 text-pri-high border-pri-high/20",
     medium: "bg-pri-medium/10 text-pri-medium border-pri-medium/20",
-    low: "bg-gray-100 text-gray-500 border-gray-200",
+    low: "bg-gray-100 dark:bg-dark-border text-gray-500 border-gray-200",
   };
   const config = PRIORITY_CONFIG[priority];
   return (
@@ -288,10 +376,10 @@ function Modal({
         mouseDownOnOverlay.current = false;
       }}
     >
-      <div className={cn("w-full rounded-2xl bg-white shadow-overlay animate-scale-in border border-gray-200", width)}>
-        <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4">
-          <h2 className="text-sm font-semibold text-gray-900">{title}</h2>
-          <button onClick={onClose} className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors">
+      <div className={cn("w-full rounded-2xl bg-white dark:bg-dark-surface shadow-overlay animate-scale-in border border-gray-200", width)}>
+        <div className="flex items-center justify-between border-b border-gray-100 dark:border-dark-border px-6 py-4">
+          <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">{title}</h2>
+          <button onClick={onClose} className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 dark:bg-dark-border hover:text-gray-600 transition-colors">
             <IconX />
           </button>
         </div>
@@ -405,29 +493,29 @@ function TaskForm({
       }}
     >
       <label className="block">
-        <span className="mb-1.5 block text-xs font-medium text-gray-700">Title</span>
+        <span className="mb-1.5 block text-xs font-medium text-gray-700 dark:text-gray-300">Title</span>
         <input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          className="block w-full rounded-lg border border-gray-200 bg-raised px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/25"
+          className="block w-full rounded-lg border border-gray-200 dark:border-dark-border bg-raised dark:bg-dark-raised px-3 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/25"
           placeholder="What needs to be done?"
           required
           autoFocus
         />
       </label>
       <label className="block">
-        <span className="mb-1.5 block text-xs font-medium text-gray-700">Description</span>
+        <span className="mb-1.5 block text-xs font-medium text-gray-700 dark:text-gray-300">Description</span>
         <textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           rows={3}
-          className="block w-full rounded-lg border border-gray-200 bg-raised px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/25"
+          className="block w-full rounded-lg border border-gray-200 dark:border-dark-border bg-raised dark:bg-dark-raised px-3 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/25"
           placeholder="Add more detail…"
         />
       </label>
       <div className="grid grid-cols-2 gap-3">
         <div className="block">
-          <span className="mb-1.5 block text-xs font-medium text-gray-700">Status</span>
+          <span className="mb-1.5 block text-xs font-medium text-gray-700 dark:text-gray-300">Status</span>
           <CustomSelect
             value={status}
             onChange={setStatus}
@@ -444,7 +532,7 @@ function TaskForm({
           />
         </div>
         <div className="block">
-          <span className="mb-1.5 block text-xs font-medium text-gray-700">Priority</span>
+          <span className="mb-1.5 block text-xs font-medium text-gray-700 dark:text-gray-300">Priority</span>
           <CustomSelect
             value={priority}
             onChange={setPriority}
@@ -467,7 +555,7 @@ function TaskForm({
         </div>
       </div>
       <div className="block" ref={assigneeRef}>
-        <span className="mb-1.5 block text-xs font-medium text-gray-700">Assignee</span>
+        <span className="mb-1.5 block text-xs font-medium text-gray-700 dark:text-gray-300">Assignee</span>
         <div className="flex items-center gap-2">
           {assignee.trim() && (
             <Avatar initials={nameToInitials(assignee)} color={assigneeColor} />
@@ -482,16 +570,16 @@ function TaskForm({
               onKeyDown={(e) => {
                 if (e.key === "Escape" && assigneeFocused) { e.stopPropagation(); setAssigneeFocused(false); (e.target as HTMLElement).blur(); }
               }}
-              className="block w-full rounded-lg border border-gray-200 bg-raised px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/25"
+              className="block w-full rounded-lg border border-gray-200 dark:border-dark-border bg-raised dark:bg-dark-raised px-3 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/25"
               placeholder="Type a name…"
             />
             {showSuggestions && (
-              <div className="absolute left-0 right-0 top-full z-10 mt-1 max-h-40 overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lifted animate-fade-in">
+              <div className="absolute left-0 right-0 top-full z-10 mt-1 max-h-40 overflow-y-auto rounded-lg border border-gray-200 dark:border-dark-border bg-white dark:bg-dark-surface shadow-lifted animate-fade-in">
                 {suggestions.map((a) => (
                   <button
                     key={a.name}
                     type="button"
-                    className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm text-gray-900 hover:bg-canvas transition-colors"
+                    className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm text-gray-900 hover:bg-canvas dark:hover:bg-dark-raised transition-colors"
                     onMouseDown={(e) => { e.preventDefault(); selectAssignee(a); }}
                   >
                     <Avatar initials={a.initials} color={a.color} />
@@ -514,7 +602,7 @@ function TaskForm({
         </div>
         {assignee.trim() && (
           <div className="mt-2 flex items-center gap-1.5">
-            <span className="text-2xs text-gray-500">Color:</span>
+            <span className="text-2xs text-gray-500 dark:text-gray-400">Color:</span>
             {AVATAR_COLORS.map((c) => (
               <button
                 key={c}
@@ -531,9 +619,9 @@ function TaskForm({
         )}
       </div>
       <div ref={tagRef} className="relative">
-        <span className="mb-1.5 block text-xs font-medium text-gray-700">Tags</span>
+        <span className="mb-1.5 block text-xs font-medium text-gray-700 dark:text-gray-300">Tags</span>
         <div
-          className="flex flex-wrap items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-2 py-1.5 focus-within:border-accent focus-within:ring-2 focus-within:ring-accent/25 min-h-[38px] cursor-text"
+          className="flex flex-wrap items-center gap-1.5 rounded-lg border border-gray-200 dark:border-dark-border bg-white dark:bg-dark-raised px-2 py-1.5 focus-within:border-accent focus-within:ring-2 focus-within:ring-accent/25 min-h-[38px] cursor-text"
           onClick={() => { tagRef.current?.querySelector("input")?.focus(); setTagFocused(true); }}
         >
           {tags.map((t) => (
@@ -556,18 +644,18 @@ function TaskForm({
                 if (e.key === "Backspace" && !tagInput && tags.length > 0) removeTag(tags[tags.length - 1]);
                 if (e.key === "," && tagInput.trim()) { e.preventDefault(); addTag(tagInput); }
               }}
-              className="w-full border-none bg-transparent py-0.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none"
+              className="w-full border-none bg-transparent py-0.5 text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 outline-none"
               placeholder={tags.length === 0 ? "Type to add tags…" : ""}
             />
           </div>
         </div>
         {showTagSuggestions && (
-          <div className="absolute left-0 right-0 top-full z-20 mt-1 max-h-36 overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lifted animate-fade-in">
+          <div className="absolute left-0 right-0 top-full z-20 mt-1 max-h-36 overflow-y-auto rounded-lg border border-gray-200 dark:border-dark-border bg-white dark:bg-dark-surface shadow-lifted animate-fade-in">
             {tagSuggestions.slice(0, 8).map((t) => (
               <button
                 key={t}
                 type="button"
-                className="flex w-full items-center px-3 py-1.5 text-left text-sm text-gray-700 hover:bg-canvas transition-colors"
+                className="flex w-full items-center px-3 py-1.5 text-left text-sm text-gray-700 hover:bg-canvas dark:hover:bg-dark-raised transition-colors"
                 onMouseDown={(e) => { e.preventDefault(); addTag(t); }}
               >
                 {t}
@@ -580,7 +668,7 @@ function TaskForm({
         <button
           type="button"
           onClick={onCancel}
-          className="rounded-lg border border-gray-200 bg-raised px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+          className="rounded-lg border border-gray-200 bg-raised px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:hover:bg-dark-raised"
         >
           Cancel
         </button>
@@ -621,27 +709,27 @@ function ProjectForm({
       }}
     >
       <label className="block">
-        <span className="mb-1.5 block text-xs font-medium text-gray-700">Project name</span>
+        <span className="mb-1.5 block text-xs font-medium text-gray-700 dark:text-gray-300">Project name</span>
         <input
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className="block w-full rounded-lg border border-gray-200 bg-raised px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/25"
+          className="block w-full rounded-lg border border-gray-200 dark:border-dark-border bg-raised dark:bg-dark-raised px-3 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/25"
           placeholder="My new project"
           required
           autoFocus
         />
       </label>
       <label className="block">
-        <span className="mb-1.5 block text-xs font-medium text-gray-700">Description</span>
+        <span className="mb-1.5 block text-xs font-medium text-gray-700 dark:text-gray-300">Description</span>
         <input
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          className="block w-full rounded-lg border border-gray-200 bg-raised px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/25"
+          className="block w-full rounded-lg border border-gray-200 dark:border-dark-border bg-raised dark:bg-dark-raised px-3 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/25"
           placeholder="What's this project about?"
         />
       </label>
       <div>
-        <span className="mb-2 block text-xs font-medium text-gray-700">Color</span>
+        <span className="mb-2 block text-xs font-medium text-gray-700 dark:text-gray-300">Color</span>
         <div className="flex flex-wrap gap-2">
           {PROJECT_COLORS.map((c) => (
             <button
@@ -661,7 +749,7 @@ function ProjectForm({
         <button
           type="button"
           onClick={onCancel}
-          className="rounded-lg border border-gray-200 bg-raised px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+          className="rounded-lg border border-gray-200 bg-raised px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:hover:bg-dark-raised"
         >
           Cancel
         </button>
@@ -893,7 +981,7 @@ function TaskCardInner({
   return (
     <div
       className={cn(
-        "group rounded-xl border border-gray-200 bg-white p-3.5 transition-all hover:shadow-lifted hover:border-gray-300",
+        "group rounded-xl border border-gray-200 dark:border-dark-border bg-white dark:bg-dark-surface p-3.5 transition-all hover:shadow-lifted hover:border-gray-300",
         overlay && "shadow-lifted ring-2 ring-accent/25 border-accent/30"
       )}
     >
@@ -906,9 +994,9 @@ function TaskCardInner({
         </button>
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
-            <p className="text-sm font-medium text-gray-900 leading-snug">{task.title}</p>
+            <p className="text-sm font-medium text-gray-900 dark:text-gray-100 leading-snug">{task.title}</p>
             <div className="flex shrink-0 items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity" onClick={stopProp}>
-              <button onClick={onEdit} className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600">
+              <button onClick={onEdit} className="rounded p-1 text-gray-400 hover:bg-gray-100 dark:bg-dark-border hover:text-gray-600 dark:text-gray-400">
                 <IconEdit className="h-3 w-3" />
               </button>
               <button onClick={onDelete} className="rounded p-1 text-gray-400 hover:bg-red-50 hover:text-red-500">
@@ -926,7 +1014,7 @@ function TaskCardInner({
           {task.assignee && (
             <div className="mt-2.5 flex items-center gap-1.5">
               <Avatar initials={task.assignee.initials} color={task.assignee.color} />
-              <span className="text-2xs text-gray-500">{task.assignee.name}</span>
+              <span className="text-2xs text-gray-500 dark:text-gray-400">{task.assignee.name}</span>
             </div>
           )}
         </div>
@@ -964,13 +1052,13 @@ function KanbanColumn({
   return (
     <div className={cn(
       "flex min-w-0 flex-1 flex-col rounded-2xl border transition-colors duration-150",
-      isOver ? "bg-accent/5 border-accent/30" : "bg-raised border-gray-200"
+      isOver ? "bg-accent/5 border-accent/30" : "bg-raised dark:bg-dark-raised border-gray-200 dark:border-dark-border"
     )}>
       <div className="flex items-center justify-between px-3.5 py-3">
         <div className="flex items-center gap-2">
           <span className="text-xs">{icon}</span>
-          <span className="text-xs font-semibold text-gray-800">{label}</span>
-          <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-gray-200/80 px-1.5 text-2xs font-semibold text-gray-500">
+          <span className="text-xs font-semibold text-gray-800 dark:text-gray-100">{label}</span>
+          <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-gray-200/80 dark:bg-dark-border px-1.5 text-2xs font-semibold text-gray-500 dark:text-gray-400">
             {tasks.length}
           </span>
         </div>
@@ -995,7 +1083,7 @@ function KanbanColumn({
           ))}
         </SortableContext>
         {tasks.length === 0 && (
-          <div className="flex h-16 items-center justify-center rounded-xl border border-dashed border-gray-300/80 text-xs text-gray-400">
+          <div className="flex h-16 items-center justify-center rounded-xl border border-dashed border-gray-300 dark:border-dark-border/80 text-xs text-gray-400">
             Drop tasks here
           </div>
         )}
@@ -1210,7 +1298,7 @@ function SortableListRow({
       ref={setNodeRef}
       style={style}
       data-task-id={task.id}
-      className="group grid grid-cols-[20px_1fr_100px_140px_80px] items-center gap-3 border-b border-gray-100 bg-white px-4 py-3 transition-colors hover:bg-gray-50"
+      className="group grid grid-cols-[20px_1fr_100px_140px_80px] items-center gap-3 border-b border-gray-100 dark:border-dark-border bg-white dark:bg-dark-surface px-4 py-3 transition-colors hover:bg-gray-50 dark:hover:bg-dark-raised"
     >
       <button
         className="cursor-grab rounded p-0.5 text-gray-300 hover:text-gray-500 active:cursor-grabbing"
@@ -1220,8 +1308,8 @@ function SortableListRow({
         <IconGrip className="h-3.5 w-3.5" />
       </button>
       <div className="min-w-0">
-        <p className="truncate text-sm font-medium text-gray-900">{task.title}</p>
-        {task.description && <p className="mt-0.5 truncate text-xs text-gray-500">{task.description}</p>}
+        <p className="truncate text-sm font-medium text-gray-900 dark:text-gray-100">{task.title}</p>
+        {task.description && <p className="mt-0.5 truncate text-xs text-gray-500 dark:text-gray-400">{task.description}</p>}
         {task.tags && task.tags.length > 0 && (
           <div className="mt-1.5 flex flex-wrap gap-1">
             {task.tags.slice(0, 3).map((tag) => <Tag key={tag}>{tag}</Tag>)}
@@ -1235,7 +1323,7 @@ function SortableListRow({
         {task.assignee ? (
           <div className="flex items-center gap-1.5">
             <Avatar initials={task.assignee.initials} color={task.assignee.color} />
-            <span className="truncate text-xs text-gray-600">{task.assignee.name}</span>
+            <span className="truncate text-xs text-gray-600 dark:text-gray-400">{task.assignee.name}</span>
           </div>
         ) : (
           <span className="text-xs text-gray-400">Unassigned</span>
@@ -1244,7 +1332,7 @@ function SortableListRow({
       <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
         <button
           onClick={onEdit}
-          className="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+          className="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 dark:bg-dark-border hover:text-gray-600"
           title="Edit"
         >
           <IconEdit className="h-3.5 w-3.5" />
@@ -1263,18 +1351,18 @@ function SortableListRow({
 
 function ListOverlayRow({ task }: { task: Task }) {
   return (
-    <div className="grid grid-cols-[20px_1fr_100px_140px_80px] items-center gap-3 rounded-xl border border-accent/30 bg-white px-4 py-3 shadow-lifted ring-2 ring-accent/20">
+    <div className="grid grid-cols-[20px_1fr_100px_140px_80px] items-center gap-3 rounded-xl border border-accent/30 bg-white dark:bg-dark-surface px-4 py-3 shadow-lifted ring-2 ring-accent/20">
       <IconGrip className="h-3.5 w-3.5 text-gray-400" />
       <div className="min-w-0">
-        <p className="truncate text-sm font-medium text-gray-900">{task.title}</p>
-        {task.description && <p className="mt-0.5 truncate text-xs text-gray-500">{task.description}</p>}
+        <p className="truncate text-sm font-medium text-gray-900 dark:text-gray-100">{task.title}</p>
+        {task.description && <p className="mt-0.5 truncate text-xs text-gray-500 dark:text-gray-400">{task.description}</p>}
       </div>
       <div><PriorityBadge priority={task.priority} /></div>
       <div>
         {task.assignee ? (
           <div className="flex items-center gap-1.5">
             <Avatar initials={task.assignee.initials} color={task.assignee.color} />
-            <span className="truncate text-xs text-gray-600">{task.assignee.name}</span>
+            <span className="truncate text-xs text-gray-600 dark:text-gray-400">{task.assignee.name}</span>
           </div>
         ) : (
           <span className="text-xs text-gray-400">Unassigned</span>
@@ -1309,13 +1397,13 @@ function ListStatusGroup({
 
   return (
     <div className={cn(
-      "overflow-hidden rounded-2xl border bg-white transition-colors duration-150",
-      isOver ? "border-accent/30 bg-accent/5" : "border-gray-200"
+      "overflow-hidden rounded-2xl border bg-white dark:bg-dark-surface transition-colors duration-150",
+      isOver ? "border-accent/30 bg-accent/5" : "border-gray-200 dark:border-dark-border"
     )}>
-      <div className="flex items-center gap-2 border-b border-gray-100 bg-raised px-4 py-2.5">
+      <div className="flex items-center gap-2 border-b border-gray-100 dark:border-dark-border bg-raised dark:bg-dark-raised px-4 py-2.5">
         <span className="text-xs">{icon}</span>
-        <span className="text-xs font-semibold text-gray-800">{label}</span>
-        <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-gray-200/80 px-1.5 text-2xs font-semibold text-gray-500">
+        <span className="text-xs font-semibold text-gray-800 dark:text-gray-100">{label}</span>
+        <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-gray-200/80 dark:bg-dark-border px-1.5 text-2xs font-semibold text-gray-500 dark:text-gray-400">
           {tasks.length}
         </span>
       </div>
@@ -1441,7 +1529,7 @@ function ListView({
 
   if (tasks.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-gray-300 py-16 text-gray-400">
+      <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-gray-300 dark:border-dark-border py-16 text-gray-400">
         <IconFolder className="mb-3 h-8 w-8" />
         <p className="text-sm font-medium">No tasks yet</p>
         <p className="mt-1 text-xs">Create a task to get started</p>
@@ -1663,10 +1751,10 @@ export default function App() {
       {/* Main content */}
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Top bar */}
-        <header className="flex h-14 shrink-0 items-center gap-3 border-b border-gray-200 bg-white/80 backdrop-blur-md px-4">
+        <header className="flex h-14 shrink-0 items-center gap-3 border-b border-gray-200 dark:border-dark-border bg-white dark:bg-dark-surface/80 dark:bg-dark-surface/80 backdrop-blur-md px-4">
           <button
             onClick={() => setSidebarOpen((v) => !v)}
-            className="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+            className="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 dark:bg-dark-border hover:text-gray-600"
             title={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
           >
             <IconMenu />
@@ -1678,7 +1766,7 @@ export default function App() {
                 <IconFolder className="h-3.5 w-3.5" />
               </span>
               <div>
-                <h1 className="text-sm font-semibold text-gray-900">{activeProject.name}</h1>
+                <h1 className="text-sm font-semibold text-gray-900 dark:text-gray-100">{activeProject.name}</h1>
               </div>
             </div>
           )}
@@ -1691,17 +1779,17 @@ export default function App() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search tasks…"
-                className="h-8 w-48 rounded-lg border border-gray-200 bg-canvas pl-8 pr-3 text-xs text-gray-900 placeholder:text-gray-400 focus:border-accent focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+                className="h-8 w-48 rounded-lg border border-gray-200 bg-canvas dark:bg-dark-raised pl-8 pr-3 text-xs text-gray-900 placeholder:text-gray-400 focus:border-accent focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/20"
               />
             </div>
 
             {/* View toggle */}
-            <div className="flex rounded-lg border border-gray-200 bg-canvas p-0.5">
+            <div className="flex rounded-lg border border-gray-200 dark:border-dark-border bg-canvas dark:bg-dark-raised p-0.5">
               <button
                 onClick={() => setView("kanban")}
                 className={cn(
                   "flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-all",
-                  view === "kanban" ? "bg-white text-gray-900 shadow-card" : "text-gray-500 hover:text-gray-700"
+                  view === "kanban" ? "bg-white dark:bg-dark-surface text-gray-900 dark:text-gray-100 shadow-card" : "text-gray-500 hover:text-gray-700"
                 )}
               >
                 <IconKanban className="h-3.5 w-3.5" />
@@ -1711,13 +1799,15 @@ export default function App() {
                 onClick={() => setView("list")}
                 className={cn(
                   "flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-all",
-                  view === "list" ? "bg-white text-gray-900 shadow-card" : "text-gray-500 hover:text-gray-700"
+                  view === "list" ? "bg-white dark:bg-dark-surface text-gray-900 dark:text-gray-100 shadow-card" : "text-gray-500 hover:text-gray-700"
                 )}
               >
                 <IconList className="h-3.5 w-3.5" />
                 List
               </button>
             </div>
+
+            <ThemeToggle />
 
             {/* New task */}
             <button
@@ -1732,17 +1822,17 @@ export default function App() {
 
         {/* Progress bar */}
         {activeProject && totalTasks > 0 && (
-          <div className="border-b border-gray-200 bg-white/80 backdrop-blur-md px-4 py-2.5">
+          <div className="border-b border-gray-200 bg-white/80 dark:bg-dark-surface/80 backdrop-blur-md px-4 py-2.5">
             <div className="flex items-center gap-3">
               <div className="flex-1">
-                <div className="h-1.5 overflow-hidden rounded-full bg-gray-100">
+                <div className="h-1.5 overflow-hidden rounded-full bg-gray-100 dark:bg-dark-border">
                   <div
                     className="h-full rounded-full bg-gradient-to-r from-accent to-accent-light transition-all duration-500"
                     style={{ width: `${(doneTasks / totalTasks) * 100}%` }}
                   />
                 </div>
               </div>
-              <span className="text-2xs font-medium text-gray-500">
+              <span className="text-2xs font-medium text-gray-500 dark:text-gray-400">
                 {doneTasks}/{totalTasks} done
               </span>
             </div>
@@ -1750,11 +1840,11 @@ export default function App() {
         )}
 
         {/* Content */}
-        <main className="flex-1 overflow-auto bg-canvas p-4 sm:p-6">
+        <main className="flex-1 overflow-auto bg-canvas dark:bg-dark-canvas p-4 sm:p-6">
           {!activeProjectId ? (
             <div className="flex flex-col items-center justify-center py-20 text-gray-400">
               <IconFolder className="mb-4 h-12 w-12" />
-              <p className="text-lg font-medium text-gray-600">Select or create a project</p>
+              <p className="text-lg font-medium text-gray-600 dark:text-gray-400">Select or create a project</p>
               <p className="mt-1 text-sm">Your tasks will appear here</p>
               <button
                 onClick={() => setProjectModal({ mode: "create" })}
@@ -1831,7 +1921,7 @@ export default function App() {
               onCancel={() => setTaskModal(null)}
             />
             {taskModal.mode === "edit" && taskModal.task && (
-              <div className="mt-4 flex items-center justify-between rounded-lg border border-red-200 bg-red-50 px-4 py-3">
+              <div className="mt-4 flex items-center justify-between rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/50 px-4 py-3">
                 <span className="text-xs text-red-700">Delete this task permanently</span>
                 <button
                   onClick={() => { handleDeleteTask(taskModal.task!); }}

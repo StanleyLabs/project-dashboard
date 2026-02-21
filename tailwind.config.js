@@ -1,5 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+  darkMode: "class",
   content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
   theme: {
     extend: {
@@ -37,6 +38,13 @@ export default {
         canvas: "#f0f0f5",
         surface: "#ffffff",
         raised: "#fafafc",
+        // Dark surfaces
+        dark: {
+          canvas: "#0f0f17",
+          surface: "#1a1a28",
+          raised: "#20202f",
+          border: "#2a2a3d",
+        },
       },
       boxShadow: {
         card: "0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)",
