@@ -128,6 +128,72 @@ function IconMenu({ className = "w-5 h-5" }: { className?: string }) {
   );
 }
 
+/* ─── Custom Select ─── */
+
+function CustomSelect<T extends string>({
+  value,
+  onChange,
+  options,
+  placeholder,
+}: {
+  value: T;
+  onChange: (v: T) => void;
+  options: { value: T; label: string }[];
+  placeholder?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const selected = options.find((o) => o.value === value);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className={cn(
+          "flex w-full items-center justify-between rounded-lg border bg-white px-3 py-2 text-left text-sm transition-colors",
+          open ? "border-accent ring-2 ring-accent/25" : "border-gray-200 hover:border-gray-300"
+        )}
+      >
+        <span className={selected ? "text-gray-900" : "text-gray-400"}>
+          {selected?.label ?? placeholder ?? "Select…"}
+        </span>
+        <svg className={cn("h-3.5 w-3.5 text-gray-400 transition-transform", open && "rotate-180")} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="m6 9 6 6 6-6" />
+        </svg>
+      </button>
+      {open && (
+        <div className="absolute left-0 right-0 top-full z-20 mt-1 max-h-48 overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lifted animate-fade-in">
+          {options.map((o) => (
+            <button
+              key={o.value}
+              type="button"
+              className={cn(
+                "flex w-full items-center px-3 py-2 text-left text-sm transition-colors",
+                o.value === value
+                  ? "bg-accent/8 text-accent-dark font-medium"
+                  : "text-gray-700 hover:bg-canvas"
+              )}
+              onClick={() => { onChange(o.value); setOpen(false); }}
+            >
+              {o.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ─── Small UI Components ─── */
 
 function PriorityBadge({ priority }: { priority: TaskPriority }) {
@@ -307,31 +373,27 @@ function TaskForm({
         />
       </label>
       <div className="grid grid-cols-2 gap-3">
-        <label className="block">
+        <div className="block">
           <span className="mb-1.5 block text-xs font-medium text-gray-700">Status</span>
-          <select
+          <CustomSelect
             value={status}
-            onChange={(e) => setStatus(e.target.value as TaskStatus)}
-            className="select-styled block w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/25"
-          >
-            {STATUS_COLUMNS.map((c) => (
-              <option key={c.key} value={c.key}>{c.label}</option>
-            ))}
-          </select>
-        </label>
-        <label className="block">
+            onChange={setStatus}
+            options={STATUS_COLUMNS.map((c) => ({ value: c.key, label: c.label }))}
+          />
+        </div>
+        <div className="block">
           <span className="mb-1.5 block text-xs font-medium text-gray-700">Priority</span>
-          <select
+          <CustomSelect
             value={priority}
-            onChange={(e) => setPriority(e.target.value as TaskPriority)}
-            className="select-styled block w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/25"
-          >
-            <option value="urgent">Urgent</option>
-            <option value="high">High</option>
-            <option value="medium">Medium</option>
-            <option value="low">Low</option>
-          </select>
-        </label>
+            onChange={setPriority}
+            options={[
+              { value: "urgent" as TaskPriority, label: "Urgent" },
+              { value: "high" as TaskPriority, label: "High" },
+              { value: "medium" as TaskPriority, label: "Medium" },
+              { value: "low" as TaskPriority, label: "Low" },
+            ]}
+          />
+        </div>
       </div>
       <div className="block" ref={assigneeRef}>
         <span className="mb-1.5 block text-xs font-medium text-gray-700">Assignee</span>
