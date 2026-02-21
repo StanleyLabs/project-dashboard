@@ -194,7 +194,7 @@ function ThemeToggle() {
         {current.icon}
       </button>
       {open && (
-        <div className="absolute right-0 top-full z-50 mt-1 w-36 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lifted animate-fade-in">
+        <div className="absolute right-0 top-full z-[100] mt-1 w-36 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lifted animate-fade-in">
           {options.map((o) => (
             <button
               key={o.value}
@@ -298,7 +298,7 @@ function PriorityBadge({ priority }: { priority: TaskPriority }) {
     urgent: "bg-pri-urgent/10 text-pri-urgent border-pri-urgent/20",
     high: "bg-pri-high/10 text-pri-high border-pri-high/20",
     medium: "bg-pri-medium/10 text-pri-medium border-pri-medium/20",
-    low: "bg-gray-100 dark:bg-dark-border text-gray-500 border-gray-200",
+    low: "bg-gray-100 dark:bg-dark-border text-gray-500 dark:text-gray-400 border-gray-200 dark:border-dark-border",
   };
   const config = PRIORITY_CONFIG[priority];
   return (
@@ -324,7 +324,7 @@ function Avatar({ initials, color, size = "sm" }: { initials: string; color: str
 
 function Tag({ children }: { children: React.ReactNode }) {
   return (
-    <span className="inline-flex items-center rounded-md bg-accent/8 px-1.5 py-0.5 text-2xs font-medium text-accent-dark">
+    <span className="inline-flex items-center rounded-md bg-accent/8 dark:bg-accent/15 px-1.5 py-0.5 text-2xs font-medium text-accent-dark dark:text-accent-light">
       {children}
     </span>
   );
@@ -625,7 +625,7 @@ function TaskForm({
           onClick={() => { tagRef.current?.querySelector("input")?.focus(); setTagFocused(true); }}
         >
           {tags.map((t) => (
-            <span key={t} className="inline-flex items-center gap-1 rounded-md bg-accent/8 px-2 py-0.5 text-2xs font-medium text-accent-dark">
+            <span key={t} className="inline-flex items-center gap-1 rounded-md bg-accent/8 dark:bg-accent/15 px-2 py-0.5 text-2xs font-medium text-accent-dark dark:text-accent-light">
               {t}
               <button type="button" onClick={(e) => { e.stopPropagation(); removeTag(t); }} className="text-accent-dark/50 hover:text-accent-dark">
                 <IconX className="h-2.5 w-2.5" />
