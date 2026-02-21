@@ -1268,8 +1268,9 @@ function KanbanBoard({
       onDragEnd={handleDragEnd}
       onDragCancel={handleDragCancel}
     >
-      <div className="flex gap-4 pb-4 overflow-x-auto kanban-scroll">
-        {STATUS_COLUMNS.map((col) => (
+      <div className="min-w-0 overflow-x-auto kanban-scroll">
+        <div className="flex gap-4 pb-4 w-max min-w-full lg:w-full">
+          {STATUS_COLUMNS.map((col) => (
           <div key={col.key} className="min-w-[272px] w-[272px] shrink-0 lg:min-w-0 lg:w-auto lg:flex-1">
             <KanbanColumn
               status={col.key}
@@ -1283,6 +1284,7 @@ function KanbanBoard({
             />
           </div>
         ))}
+        </div>
       </div>
       <DragOverlay dropAnimation={{ duration: 200, easing: "ease" }}>
         {activeTask ? (
