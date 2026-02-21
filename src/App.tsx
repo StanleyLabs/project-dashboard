@@ -1027,10 +1027,10 @@ function TaskCardInner({
           <div className="flex items-start justify-between gap-2">
             <p className="text-sm font-medium text-gray-900 dark:text-gray-100 leading-snug">{task.title}</p>
             <div className="flex shrink-0 items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity" onClick={stopProp}>
-              <button onClick={onEdit} className="rounded p-1 text-gray-400 hover:bg-gray-100 dark:bg-dark-border hover:text-gray-600 dark:text-gray-400">
+              <button onClick={onEdit} className="rounded p-1 text-gray-400 hover:bg-gray-100 dark:hover:bg-dark-border hover:text-gray-600 dark:hover:text-gray-200">
                 <IconEdit className="h-3 w-3" />
               </button>
-              <button onClick={onDelete} className="rounded p-1 text-gray-400 hover:bg-red-50 hover:text-red-500">
+              <button onClick={onDelete} className="rounded p-1 text-gray-400 hover:bg-red-50 dark:hover:bg-red-500/20 hover:text-red-500 dark:hover:text-red-400">
                 <IconTrash className="h-3 w-3" />
               </button>
             </div>
@@ -1359,14 +1359,14 @@ function SortableListRow({
         <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
           <button
             onClick={onEdit}
-            className="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 dark:bg-dark-border hover:text-gray-600"
+            className="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 dark:hover:bg-dark-border hover:text-gray-600 dark:hover:text-gray-200"
             title="Edit"
           >
             <IconEdit className="h-3.5 w-3.5" />
           </button>
           <button
             onClick={onDelete}
-            className="rounded-md p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-500"
+            className="rounded-md p-1.5 text-gray-400 hover:bg-red-50 dark:hover:bg-red-500/20 hover:text-red-500 dark:hover:text-red-400"
             title="Delete"
           >
             <IconTrash className="h-3.5 w-3.5" />
@@ -1386,8 +1386,8 @@ function SortableListRow({
           <div className="flex items-start justify-between gap-2">
             <p className="text-sm font-medium text-gray-900 dark:text-gray-100 line-clamp-2">{task.title}</p>
             <div className="flex shrink-0 items-center gap-0.5">
-              <button onClick={onEdit} className="rounded-md p-1 text-gray-400 hover:text-gray-600"><IconEdit className="h-3.5 w-3.5" /></button>
-              <button onClick={onDelete} className="rounded-md p-1 text-gray-400 hover:text-red-500"><IconTrash className="h-3.5 w-3.5" /></button>
+              <button onClick={onEdit} className="rounded-md p-1 text-gray-400 hover:bg-gray-100 dark:hover:bg-dark-border hover:text-gray-600 dark:hover:text-gray-200"><IconEdit className="h-3.5 w-3.5" /></button>
+              <button onClick={onDelete} className="rounded-md p-1 text-gray-400 hover:bg-red-50 dark:hover:bg-red-500/20 hover:text-red-500 dark:hover:text-red-400"><IconTrash className="h-3.5 w-3.5" /></button>
             </div>
           </div>
           {task.description && <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400 line-clamp-1">{task.description}</p>}
