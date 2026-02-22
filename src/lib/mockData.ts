@@ -50,7 +50,7 @@ export const MOCK_TASKS: Task[] = [
     id: "t-002",
     projectId: "p-001",
     title: "Design system components",
-    description: "Build reusable component library — buttons, cards, inputs, modals",
+    description: "Build reusable component library - buttons, cards, inputs, modals",
     status: "in_progress",
     priority: "high",
     assignee: { name: "Ken Stanley", initials: "KS", color: "#6366F1" },
